@@ -1,0 +1,20 @@
+#Antares ignores
+*/antares
+*/images
+*/build
+*/kconfig
+*/.config.old
+*/lex.backup
+*/tmp
+
+*/include/gen*
+*/include/arch
+*/include/config
+
+# Editors ignores
+*.swp
+.*.swp
+
+# Personal
+satellite/Makefile
+cerebellum/Makefile

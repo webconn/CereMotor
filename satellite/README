@@ -1,0 +1,56 @@
+Cerebellum Satellite Module Firmware Source
+-------------------------------------------
+
+
+0. FUNCTIONALITY OF THE MODULE
+------------------------------
+The basic functionality of the module:
+
+1. Motor driver abstraction
+2. Encoders synchronisation
+3. Basic movement reflexes
+
+
+1. HARDWARE DESCRIPTION
+------------------------
+The Cerebellum Satellite module consists of:
+ - ATtiny2313A uC
+ - One USER_LED
+
+ATtiny2313A clocked from 16 MHz quartz.
+
+
+1.1. SATELLITE PINS DESCRIPTION
+---------------------------------
+Pins 1,2    -   [RESET]
+Pins 3,4    -   UART interface
+    Pin 3   -   UART RxD
+    Pin 4   -   UART TxD
+Pins 5,6    -   Encoder channels
+    Pin 5   -   Encoder channel A
+    Pin 6   -   Encoder channel B
+Pins 7,8    -   (reserved)
+    Pin 9   -   User LED
+Pins 10,11  -   [GND]
+Pins 12,13  -   Analog comparator inputs
+    Pin 12  -   Negative
+    Pin 13  -   Positive
+Pins 14-16  -   Driver interface
+    Pin 14  -   Dir0
+    Pin 15  -   Dir1
+    Pin 16  -   PWM
+Pins 17-19  -   SPI interface
+    Pin 17  -   MOSI
+    Pin 18  -   MISO
+    Pin 19  -   SCK
+
+
+
+2. SOFTWARE DESCRIPTION
+-----------------------
+The Cerebellum Satellite module designed as finite-state machine, so you don't need to
+write your code specially for module.
+
+Interaction with the module is happening by UART interface.
+The command consists of 2(3) bytes: first - ID of command, 2nd and 3rd - bytes to send (3rd byte - high bits, 2nd byte - low bits)
+The answer to command consists of 0(1(2)) bytes.

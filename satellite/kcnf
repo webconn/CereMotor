@@ -1,0 +1,7 @@
+config SAT_UART_BAUDRATE
+int "UART baudrate"
+default 19200
+
+config SAT_UART_RXBUFFER
+int "UART read buffer size (in bytes)"
+default 10

@@ -1,0 +1,2 @@
+config PROJECT_TEST
+bool "Build HelloWorld project"
