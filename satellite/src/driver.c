@@ -11,7 +11,7 @@ void driver_init(void)
     // For PWM feature, we use Timer1
     // Configuring timer
     // Compare ch.A, PWM Phase Correct, 10-bit
-    TCCR1A = (1<<COM1A1)|(1<<WGM11)|(1<<WGM10);
+    TCCR1A = (1<<COM1B1)|(1<<WGM11)|(1<<WGM10);
     TCCR1B = (1<<CS11)|(1<<CS10); // clock divide by 64
 }
 
@@ -28,7 +28,7 @@ void driver_set_speed(uint16_t speed)
 {
     // Formally, to set speed of motor, we need to change PWM length
     // Change PWM is to change timer compare register :)
-    OCR1A = speed;
+    OCR1B = speed;
 }
 
 void driver_stop(void)
