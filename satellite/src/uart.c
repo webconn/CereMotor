@@ -11,6 +11,19 @@ void (* _rx_handler)(void) = 0;
 char _rx_buffer[CONFIG_SAT_UART_RXBUFFER];
 uint8_t _rx_buffer_index = 0;
 
+char ret[6];
+char * to_str(uint16_t digit)
+{
+    int8_t i;
+    for(i=4; i!=-1; i--)
+    {
+        ret[i] = digit % 10 + '0'; 
+        digit /= 10;
+    }
+    ret[5] = 0;
+    return ret;
+}
+
 void uart_init(void)
 {
     DDRD &= ~1;

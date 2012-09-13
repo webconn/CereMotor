@@ -10,15 +10,19 @@ volatile int32_t rellength = 0; // relative length (with dir)
 volatile uint16_t speed = 0; // current speed
 volatile uint16_t _speed = 0; // unparsed speed
 
-void _encoder_tick(void);
 
 void encoder_init(void)
 {
-    // Initialisation of encoder is init of INT0 and configuring PD3
-    DDRD &= 0xFF & ~(1<<3); // channel B to input
-    MCUCR = (1<<ISC01)|(1<<ISC00); // sense to rising edge on INT0
-    GIMSK = (1<<INT0); // interrupt enable
-    task_add(&_encoder_tick, 0); // add _encoder_tick to task manager
+    // Firstly, let's launch the timer
+    // It helps to calculate speed more correctly
+    TCCR0B = (1<<CS02)|(1<<CS00); // clk/1024 prescaler
+    TIMSK |= (1<<TOIE0);
+    
+    // Initialisation of encoder is init
+    // of INT1 and configuring PD2
+    DDRD &= 0xFF & ~(1<<4); // channel A to input
+    MCUCR = (1<<ISC11); // sense to falling edge on INT1
+    GIMSK = (1<<INT1); // interrupt enable
 }
 
 uint16_t encoder_get_speed(void)
@@ -42,17 +46,16 @@ void encoder_reset(void)
     rellength = 0;
 }
 
-ISR(INT0_vect)
+ISR(INT1_vect)
 {
     length++;
     _speed++;
-    if((PIND & (1<<3)) == 0) rellength++;
-    else rellength--;
+    if((PIND & (1<<4)) == 0) rellength--;
+    else rellength++;
 }
 
-void _encoder_tick(void)
+ISR(TIMER0_OVF_vect)
 {
-    task_add(&_encoder_tick, 10); // run this task every 10 ms
     speed = _speed;
     _speed = 0;
 }

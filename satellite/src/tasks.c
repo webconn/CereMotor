@@ -21,7 +21,7 @@ volatile uint8_t flags = 0;
 
 void task_init(void)
 {
-    // For task manager, we will use Timer0
+    // For task manager, we will use Timer1
     // Let's init it!
     
     TCCR1B = (1<<WGM12)|(1<<CS12); // clock divided by 256

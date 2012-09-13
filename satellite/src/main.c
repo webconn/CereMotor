@@ -19,20 +19,31 @@ void Rx_handler(void)
     uart_flush_rx_buffer();
 }
 
+
+void Enc_handler(void)
+{
+    task_add(&Enc_handler, 40);
+    cli();
+    uart_send_string("Speed: ");
+    uart_send_string(to_str(encoder_get_speed()));
+    uart_send_byte('\r');
+    sei();
+}
+
 int main(void)
 {
     // initialisation
     led_init();
     uart_init();
     task_init();
+    encoder_init();
     
-    led_on();
-    //uart_send_string("CereSat ready.\r\n\n");
-    sei();
-    led_off();
+    uart_send_string("Ready.\n\n\r");
 
-    uart_set_rx_handler(&Rx_handler);
-    
+    sei();
+
+    Enc_handler();
+
     while(1)
     {
         task_manager();
