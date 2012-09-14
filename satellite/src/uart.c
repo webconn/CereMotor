@@ -8,21 +8,6 @@
 #include <sat/tasks.h>
 
 void (* _rx_handler)(void) = 0;
-char _rx_buffer[CONFIG_SAT_UART_RXBUFFER];
-uint8_t _rx_buffer_index = 0;
-
-char ret[6];
-char * to_str(uint16_t digit)
-{
-    int8_t i;
-    for(i=4; i!=-1; i--)
-    {
-        ret[i] = digit % 10 + '0'; 
-        digit /= 10;
-    }
-    ret[5] = 0;
-    return ret;
-}
 
 void uart_init(void)
 {
@@ -57,27 +42,7 @@ void uart_set_rx_handler(void * handler)
     _rx_handler = handler;
 }
 
-char * uart_get_rx_buffer(void)
-{
-    return _rx_buffer;
-}
-
-void uart_flush_rx_buffer(void)
-{
-    uint8_t i = 0;
-    while(i != CONFIG_SAT_UART_RXBUFFER)
-        _rx_buffer[i++] = 0;
-}
-
 ISR(USART_RX_vect)
 {
-    char rx_byte = UDR;
-    if(rx_byte != 0 && _rx_buffer_index != CONFIG_SAT_UART_RXBUFFER) // if the end of line is not reached
-        _rx_buffer[_rx_buffer_index++] = rx_byte; 
-    else // if the end of line is reached or the buffer is full
-    {
-        _rx_buffer_index = 0;
-        task_add(_rx_handler, 0);
-    }
-    
+    _rx_handler();
 }

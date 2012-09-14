@@ -46,9 +46,9 @@ void task_manager(void)
     {
         if(flags & (1<<i))
         {
-            tasks[i].function();
-            flags &= ~(1<<i);
             tasks[i].delay = 65535;
+            flags &= ~(1<<i);
+            tasks[i].function();
             #ifdef DEBUG_NT
             num_tasks--;
             #endif

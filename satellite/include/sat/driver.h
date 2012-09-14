@@ -10,10 +10,14 @@
 #ifndef DIR_INV
     #define FORWARD 1
     #define BACKWARD 2
+    #define driver_get_dir() ((PINB >> 2) & 3)
 #else
     #define FORWARD 2
     #define BACKWARD 1
+    #define driver_get_dir() (~(PINB >> 2) & 3)
 #endif
+
+#define driver_get_speed() (OCR1B)
 
 /**
  * Main functions

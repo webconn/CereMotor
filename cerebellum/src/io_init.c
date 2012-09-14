@@ -2,7 +2,7 @@
 #include <stm32f10x_rcc.h>
 #include <stm32f10x_gpio.h>
 #include <stm32f10x.h>
-//#include <lib/tasks.h>
+#include <lib/tasks.h>
 
 /*
 void SysTick_Handler(void)
@@ -26,7 +26,7 @@ int main(void)
 
     // init SysTick
     SysTick_Config(SystemCoreClock / 1000);
-    /*
+    
     while(1)
     {
         GPIO_SetBits(GPIOA, GPIO_Pin_5);
@@ -34,6 +34,11 @@ int main(void)
         GPIO_ResetBits(GPIOA, GPIO_Pin_5);
         sleep_ticks(1000);
     }
-    */
+    
     return 0;
+}
+
+void mdelay(void)
+{
+
 }

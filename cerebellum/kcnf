@@ -1,2 +1,2 @@
-config PROJECT_TEST
-bool "Build HelloWorld project"
+config HELLO_WORLD
+bool "Say hello to the world"
