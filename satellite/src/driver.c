@@ -38,3 +38,8 @@ void driver_stop(void)
     // Let's make it equals 1
     PORTB |= 3<<2;
 }
+
+uint8_t driver_get_dir(void)
+{
+    return drv_get_dir();
+}

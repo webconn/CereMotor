@@ -42,7 +42,3 @@ void uart_set_rx_handler(void * handler)
     _rx_handler = handler;
 }
 
-ISR(USART_RX_vect)
-{
-    _rx_handler();
-}

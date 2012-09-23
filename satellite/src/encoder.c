@@ -5,6 +5,7 @@
 #include <avr/interrupt.h>
 #include <avr/eeprom.h>
 #include <stdint.h>
+#include <sat/led.h>
 
 
 volatile uint32_t length = 0; // absolute length (without dir)
@@ -42,6 +43,16 @@ uint8_t encoder_get_dir(void)
 uint8_t encoder_get_speed(void)
 {
     return speed;
+}
+
+uint32_t encoder_get_length(void)
+{
+    return length;
+}
+
+int32_t encoder_get_rellength(void)
+{
+    return rellength;
 }
 
 void encoder_reset(void)

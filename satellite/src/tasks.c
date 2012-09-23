@@ -74,12 +74,6 @@ void task_add(void * func, uint16_t delay)
     }
 }
 
-void sys_reset(void)
-{
-    wdt_enable(WDTO_15MS);
-    _delay_ms(20);
-}
-
 // Timer0 interrupt vector: get tasks from timers
 
 ISR(TIMER1_COMPA_vect)
