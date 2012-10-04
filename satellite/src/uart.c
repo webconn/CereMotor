@@ -19,7 +19,7 @@ void uart_init(void)
     // Configuring lines
     UCSRB = (1<<RXCIE)|(1<<RXEN)|(1<<TXEN); // enable Rx,Tx; Rx interrupt
     // Configuring interface
-    UCSRC = (1<<UCSZ1)|(1<<UCSZ0); // 8-bit, 1 stop bit, no parity
+    UCSRC = (1<<UCSZ1)|(1<<UCSZ0)|(1<<UPM1); // 8-bit, 1 stop bit, even parity
 }
 
 void uart_send_byte(char byte)

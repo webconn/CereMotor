@@ -30,7 +30,7 @@ USART_RX_vect:
 
     dec R20                     ; decrement - we haven't command 0x00, only 0x01 and higher
 
-    cpi R20, 0x0B               ; check input value for range 0x01 - 0x0E
+    cpi R20, 0x0F               ; check input value for range 0x01 - 0x0E
     brcc uartint_close          ; if higher - do nothing
 
     lsl R20                     ; shift it left (equals *2)
@@ -61,12 +61,13 @@ uartint_close:
     out _SFR_IO_ADDR(SREG), R21
     pop R21
     pop R20
-
     reti
 
 ; Here comes the table of functions to call (15)
 
-Commands: .word pm(Enc_getdir), pm(Drv_getdir), pm(Enc_getlen), pm(Enc_getpath), pm(Drv_getspeed), pm(Rq_getspeed), pm(Enc_getspeed), pm(Drv_setdir), pm(Drv_setspeed), pm(Rq_setspeed), pm(encoder_reset)
+.extern set_auto, set_manual
+
+Commands: .word pm(Enc_getdir), pm(Drv_getdir), pm(Enc_getlen), pm(Enc_getpath), pm(Drv_getspeed), pm(Rq_getspeed), pm(Enc_getspeed), pm(Drv_setdir), pm(Drv_setspeed), pm(Rq_setspeed), pm(encoder_reset), pm(set_manual), pm(set_auto), pm(Rq_setprop), pm(Rq_setdiff)
 
 ; Here comes the command handlers
 
@@ -169,19 +170,39 @@ Drv_getspeed:
     ret
 
 Rq_getspeed:
-    ; TODO: Stabilistaion algos
+    
+    push r24
+    push r25
+
+    .extern rq_getspeed
+    rcall rq_getspeed
+
+    rcall UART_wait
+    out _SFR_IO_ADDR(UDR), r25
+
+    rcall UART_wait
+    out _SFR_IO_ADDR(UDR), r24
+
+    pop r25
+    pop r24
+
     ret
 
 Enc_getspeed:
     
     push r24
+    push r25
     
     .extern encoder_get_speed
     rcall encoder_get_speed
 
     rcall UART_wait
+    out _SFR_IO_ADDR(UDR), r25
+
+    rcall UART_wait
     out _SFR_IO_ADDR(UDR), r24
 
+    pop r25
     pop r24
 
     ret
@@ -240,5 +261,45 @@ Drv_setspeed:
 
 Rq_setspeed:
 
-    ; TODO: stabilisation algos
+    push r24
+    push r25
+    
+    rcall UART_receive
+    mov r25, r24
+
+    rcall UART_receive
+
+    .extern rq_setspeed
+    rcall rq_setspeed
+
+    pop r25
+    pop r24
+
+    ret
+
+Rq_setprop:
+
+    push r24
+
+    rcall UART_receive
+
+    .extern rq_setprop
+    rcall rq_setprop
+
+    pop r24
+
+    ret
+
+
+Rq_setdiff:
+
+    push r24
+
+    rcall UART_receive
+
+    .extern rq_setdiff
+    rcall rq_setdiff
+
+    pop r24
+
     ret
