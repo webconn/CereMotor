@@ -1,0 +1,2 @@
+config CRITICAL_VALUE
+int "Critical ADC value"

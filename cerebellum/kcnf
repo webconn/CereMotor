@@ -1,2 +1,3 @@
-config HELLO_WORLD
-bool "Say hello to the world"
+config SAT_UART_BAUDRATE
+    int "CereSat's baudrate"
+    default 57600
