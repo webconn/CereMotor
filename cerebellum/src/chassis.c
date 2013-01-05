@@ -9,6 +9,7 @@
 #include <stm32f10x.h>
 #include <stm32f10x_gpio.h>
 #include <stm32f10x_tim.h>
+#include <stm32f10x_rcc.h>
 
 #include <cerebellum/chassis.h>
 
@@ -18,17 +19,20 @@
 #define BACKWARD 0
 
 #ifdef CONFIG_ROBOT_2013
-    #define DIR_LEFT_FWD_PIN GPIO_Pin_5
-    #define DIR_LEFT_FWD_GPIO GPIOB
+    #define ON_APB1 RCC_APB1Periph_TIM4
+    #define ON_APB2 RCC_APB2Periph_AFIO | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOA
+
+    #define DIR_LEFT_BWD_PIN GPIO_Pin_10
+    #define DIR_LEFT_BWD_GPIO GPIOC
     
-    #define DIR_LEFT_BWD_PIN GPIO_Pin_4
-    #define DIR_LEFT_BWD_GPIO GPIOB
+    #define DIR_LEFT_FWD_PIN GPIO_Pin_2
+    #define DIR_LEFT_FWD_GPIO GPIOD
     
-    #define DIR_RIGHT_FWD_PIN GPIO_Pin_3
-    #define DIR_RIGHT_FWD_GPIO GPIOB
+    #define DIR_RIGHT_BWD_PIN GPIO_Pin_3
+    #define DIR_RIGHT_BWD_GPIO GPIOC
     
-    #define DIR_RIGHT_BWD_PIN GPIO_Pin_2
-    #define DIR_RIGHT_BWD_GPIO GPIOD
+    #define DIR_RIGHT_FWD_PIN GPIO_Pin_0
+    #define DIR_RIGHT_FWD_GPIO GPIOA
 
     #define PWM_LEFT_PIN GPIO_Pin_8
     #define PWM_LEFT_GPIO GPIOB
@@ -36,10 +40,10 @@
     #define PWM_RIGHT_PIN GPIO_Pin_9
     #define PWM_RIGHT_GPIO GPIOB
 
-    #define PWM_LEFT_TIMER TIM3
+    #define PWM_LEFT_TIMER TIM4
     #define PWM_LEFT_OC 3
 
-    #define PWM_RIGHT_TIMER TIM3
+    #define PWM_RIGHT_TIMER TIM4
     #define PWM_RIGHT_OC 4
 #endif
 
@@ -54,6 +58,10 @@ void chassis_init(void)
      * is configuring GPIO and PWM timers
      */
 
+    // Clock start
+    RCC_APB1PeriphClockCmd(ON_APB1, ENABLE);
+    RCC_APB2PeriphClockCmd(ON_APB2, ENABLE);
+
     /*
      * Init GPIO of the directors
      */
@@ -64,19 +72,19 @@ void chassis_init(void)
     };
 
     // Left FWD pin
-    directors.GPIO_Pins = DIR_LEFT_FWD_PIN;
+    directors.GPIO_Pin = DIR_LEFT_FWD_PIN;
     GPIO_Init(DIR_LEFT_FWD_GPIO, &directors);
 
     // Left BWD pin
-    directors.GPIO_Pins = DIR_LEFT_BWD_PIN;
+    directors.GPIO_Pin = DIR_LEFT_BWD_PIN;
     GPIO_Init(DIR_LEFT_BWD_GPIO, &directors);
 
     // Right FWD pin
-    directors.GPIO_Pins = DIR_RIGHT_FWD_PIN;
+    directors.GPIO_Pin = DIR_RIGHT_FWD_PIN;
     GPIO_Init(DIR_RIGHT_FWD_GPIO, &directors);
 
     // Right BWD pin
-    directors.GPIO_Pins = DIR_RIGHT_BWD_PIN;
+    directors.GPIO_Pin = DIR_RIGHT_BWD_PIN;
     GPIO_Init(DIR_RIGHT_BWD_GPIO, &directors);
 
     /*
@@ -89,12 +97,12 @@ void chassis_init(void)
     };
 
     // Left PWM pin
-    PWM_Outputs.GPIO_Pins = PWM_LEFT_PIN;
-    GPIO_Init(PWM_LEFT_GPIO, &PWM_Outputs)Output;
+    PWM_Outputs.GPIO_Pin = PWM_LEFT_PIN;
+    GPIO_Init(PWM_LEFT_GPIO, &PWM_Outputs);
     
     // Right PWM pin
-    PWM_Outputs.GPIO_Pins = PWM_RIGHT_PIN;
-    GPIO_Init(PWM_Right_GPIO, &PWM_Outputs);
+    PWM_Outputs.GPIO_Pin = PWM_RIGHT_PIN;
+    GPIO_Init(PWM_RIGHT_GPIO, &PWM_Outputs);
 
     /*
      * Init PWM timers
@@ -102,7 +110,7 @@ void chassis_init(void)
 
     // Init time base
     TIM_TimeBaseInitTypeDef timer = {
-        .TIM_Period = 1023,                     // PWM accuracy is 1024 variants
+        .TIM_Period = 8191,                     // PWM accuracy is 8192 variants
         .TIM_Prescaler = 0,                     // Prescaler off
         .TIM_ClockDivision = 0,                 // Clock divider if off
         .TIM_CounterMode = TIM_CounterMode_Up   // Upcounting
@@ -133,7 +141,7 @@ void chassis_init(void)
         TIM_OC4Init(PWM_LEFT_TIMER, &TIM_Out);
         TIM_OC4PreloadConfig(PWM_LEFT_TIMER, TIM_OCPreload_Enable);
     #else
-        #error "Invalid Output Compare number for left PWM: must be 1-4
+        #error "Invalid Output Compare number for left PWM: must be 1-4"
     #endif
 
     // Right timer
@@ -150,7 +158,7 @@ void chassis_init(void)
         TIM_OC4Init(PWM_RIGHT_TIMER, &TIM_Out);
         TIM_OC4PreloadConfig(PWM_RIGHT_TIMER, TIM_OCPreload_Enable);
     #else
-        #error "Invalid Output Compare number for right PWM: must be 1-4
+        #error "Invalid Output Compare number for right PWM: must be 1-4"
     #endif
 
     // Enable timers

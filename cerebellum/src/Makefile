@@ -1,1 +1,1 @@
-objects-y+=io_init.o pid.o deltacoords.o
+objects-y+=main.o pid.o deltacoords.o chassis.o
