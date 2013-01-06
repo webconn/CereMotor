@@ -19,20 +19,20 @@
 #define BACKWARD 0
 
 #ifdef CONFIG_ROBOT_2013
-    #define ON_APB1 RCC_APB1Periph_TIM4
-    #define ON_APB2 RCC_APB2Periph_AFIO | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOC | RCC_APB2Periph_GPIOA
+    #define CHASSIS_APB1 RCC_APB1Periph_TIM4
+    #define CHASSIS_APB2 RCC_APB2Periph_AFIO | RCC_APB2Periph_GPIOB | RCC_APB2Periph_GPIOD | RCC_APB2Periph_GPIOC
 
-    #define DIR_LEFT_BWD_PIN GPIO_Pin_10
-    #define DIR_LEFT_BWD_GPIO GPIOC
+    #define DIR_LEFT_FWD_PIN GPIO_Pin_10
+    #define DIR_LEFT_FWD_GPIO GPIOC
     
-    #define DIR_LEFT_FWD_PIN GPIO_Pin_2
-    #define DIR_LEFT_FWD_GPIO GPIOD
+    #define DIR_LEFT_BWD_PIN GPIO_Pin_2
+    #define DIR_LEFT_BWD_GPIO GPIOD
     
-    #define DIR_RIGHT_BWD_PIN GPIO_Pin_3
+    #define DIR_RIGHT_FWD_PIN GPIO_Pin_3
+    #define DIR_RIGHT_FWD_GPIO GPIOC
+    
+    #define DIR_RIGHT_BWD_PIN GPIO_Pin_2
     #define DIR_RIGHT_BWD_GPIO GPIOC
-    
-    #define DIR_RIGHT_FWD_PIN GPIO_Pin_0
-    #define DIR_RIGHT_FWD_GPIO GPIOA
 
     #define PWM_LEFT_PIN GPIO_Pin_8
     #define PWM_LEFT_GPIO GPIOB
@@ -59,8 +59,8 @@ void chassis_init(void)
      */
 
     // Clock start
-    RCC_APB1PeriphClockCmd(ON_APB1, ENABLE);
-    RCC_APB2PeriphClockCmd(ON_APB2, ENABLE);
+    RCC_APB1PeriphClockCmd(CHASSIS_APB1, ENABLE);
+    RCC_APB2PeriphClockCmd(CHASSIS_APB2, ENABLE);
 
     /*
      * Init GPIO of the directors

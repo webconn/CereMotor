@@ -1,1 +1,1 @@
-objects-y+=main.o pid.o deltacoords.o chassis.o
+objects-y+=main.o pid.o deltacoords.o chassis.o encoders.o led.o uart.o

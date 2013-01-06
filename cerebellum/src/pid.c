@@ -1,6 +1,10 @@
 #include <cerebellum/pid.h>
 #include <cerebellum/robot.h>
 
+#ifdef CONFIG_ROBOT_2013
+    #define CHASSIS_RADIUS (102.5 * 40)
+#endif
+
 pidConfig _pid;
 
 int32_t calculateLinError(int32_t speed1, int32_t speed2)
@@ -9,7 +13,7 @@ int32_t calculateLinError(int32_t speed1, int32_t speed2)
     return speed1-speed2;
 }
 
-int32_t calculateRadError(int32_t speed1, int32_t speed2, uint32_t radius)
+int32_t calculateRadError(int32_t speed1, int32_t speed2, int32_t radius)
 {
     // Radial error is something more difficult
     // In fact, the dependence looks like this:
@@ -21,8 +25,7 @@ int32_t calculateRadError(int32_t speed1, int32_t speed2, uint32_t radius)
     // So, Va = V1*(R-r), Vb = V2*(R+r)
     //
     // Let's get V1 - V2
-    uint32_t chassisRadius = getChassisRadius();
-    return (speed1 / (int32_t) (radius - chassisRadius)) - (int32_t) (speed2 / (radius + chassisRadius));
+    return (int32_t) (speed1 / (int32_t) (radius - CHASSIS_RADIUS)) - (int32_t) (speed2 / (int32_t) (radius + CHASSIS_RADIUS));
 }
 
 int32_t getRequiredPWM(int32_t requiredSpeed)
@@ -38,7 +41,7 @@ int32_t getRequiredPWM(int32_t requiredSpeed)
     //
     // There's something wrong, coefficient depends on frequency of collector timer
     // and on wheel radius and on encoder resolution etc.
-    return 2*requiredSpeed; 
+    return 16*requiredSpeed; 
 }
 
 void updatePID(int32_t error, int32_t requiredPWM, int32_t * value1, int32_t * value2)
@@ -61,8 +64,8 @@ void updatePID(int32_t error, int32_t requiredPWM, int32_t * value1, int32_t * v
     int32_t correction = (error * _pid.p_gain) + (integral / _pid.i_rgain) - (derivative / _pid.d_rgain);
 
     // 4. Return new data
-    *value1 = requiredPWM - correction;
-    *value2 = requiredPWM + correction;
+    *value1 = requiredPWM + correction;
+    *value2 = requiredPWM - correction;
     // TODO: if something goes wrong, just change signs :)
 }
 

@@ -28,7 +28,7 @@ typedef struct{
 
 int32_t getRequiredPWM(int32_t requiredSpeed);
 int32_t calculateLinError(int32_t speed1, int32_t speed2);
-int32_t calculateRadError(int32_t speed1, int32_t speed2, uint32_t radius);
+int32_t calculateRadError(int32_t speed1, int32_t speed2, int32_t radius);
 void updatePID(int32_t error, int32_t requiredPWM, int32_t * pwm1, int32_t * pwm2);
 void resetPID(void);
 void configPID(pidConfig * data);
