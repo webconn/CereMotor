@@ -42,6 +42,7 @@ void SysTick_Handler(void)
 
 void chassis_line(int32_t pwm)
 {
+    resetPID();
     encoder_reset(1);
     encoder_reset(0);
     _running = 1;
@@ -50,6 +51,7 @@ void chassis_line(int32_t pwm)
 
 void chassis_rad(int32_t pwm, int32_t radius)
 {
+    resetPID();
     _running = 2;
     _pwm = pwm;
     _radius = radius;
@@ -78,7 +80,7 @@ int main(void)
 
     // Configuring PID
     pidConfig cnf = {
-        .p_gain = 3,
+        .p_gain = 2,
         .i_rgain = 10000,
         .d_rgain = 100,
         
