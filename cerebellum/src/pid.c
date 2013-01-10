@@ -1,9 +1,5 @@
 #include <cerebellum/pid.h>
-#include <cerebellum/robot.h>
-
-#ifdef CONFIG_ROBOT_2013
-    #define CHASSIS_RADIUS (102.5 * 40)
-#endif
+#include <robots/config.h>
 
 pidConfig _pid;
 
@@ -25,7 +21,7 @@ int32_t calculateRadError(int32_t speed1, int32_t speed2, int32_t radius)
     // So, Va = V1*(R-r), Vb = V2*(R+r)
     //
     // Let's get V1 - V2
-    return (int32_t) (speed1 / (int32_t) (radius - CHASSIS_RADIUS)) - (int32_t) (speed2 / (int32_t) (radius + CHASSIS_RADIUS));
+    return (int32_t) (speed1 / (int32_t) (radius - mmToTicks(CONFIG_CHASSIS_RADIUS))) - (int32_t) (speed2 / (int32_t) (radius + mmToTicks(CONFIG_CHASSIS_RADIUS)));
 }
 
 int32_t getRequiredPWM(int32_t requiredSpeed)

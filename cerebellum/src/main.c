@@ -80,7 +80,7 @@ int main(void)
 
     // Configuring PID
     pidConfig cnf = {
-        .p_gain = 2,
+        .p_gain = 1,
         .i_rgain = 10000,
         .d_rgain = 100,
         

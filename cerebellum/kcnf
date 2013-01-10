@@ -1,6 +1,187 @@
-config SAT_UART_BAUDRATE
-    int "CereSat's baudrate"
-    default 57600
+menu "Robot modules"
 
-config ROBOT_2013
-    bool "Use 2013 robot config"
+    config USE_CHASSIS
+        bool "Chassis library"
+        default "y"
+
+    config USE_ENCODERS
+        bool "Encoders library"
+        default "y"
+
+    config USE_PID
+        bool "PID stabilisation"
+        default "y"
+
+    config USE_COORDS
+        bool "Coords computer"
+        default "n"
+        
+endmenu
+
+choice
+    prompt "Robot config set"
+    
+    config ROBOT_2013PROTO
+    bool "Robot 2013 Prototype"
+
+    config ROBOT_DEFAULT
+    bool "Manual configuration"
+
+endchoice
+
+if ROBOT_DEFAULT
+
+menu "Manual robot configuration"
+
+    # Chassis configuration
+
+    if USE_CHASSIS
+    menu "Chassis configuration"
+
+        config PWM_ACCURACY
+            int "PWM accuracy"
+
+        comment "MCU core configuration"
+
+        config CHASSIS_APB1
+            string "Chassis APB1 init"
+
+        config CHASSIS_APB2
+            string "Chassis APB2 init"
+
+        comment "Left engine"
+
+        config DIR_LEFT_FWD_GPIO
+            string "Left FWD GPIO"
+
+        config DIR_LEFT_FWD_PIN
+            int "Left FWD Pin"
+
+        config DIR_LEFT_BWD_GPIO
+            string "Left BWD GPIO"
+
+        config DIR_LEFT_BWD_PIN
+            int "Left FWD Pin"
+
+        config PWM_LEFT_GPIO
+            string "Left PWM GPIO"
+
+        config PWM_LEFT_PIN
+            int "Left PWM Pin"
+
+        config PWM_LEFT_TIMER
+            string "Left PWM Timer"
+
+        config PWM_LEFT_OC
+            int "Left PWM Timer Output"
+
+        comment "Right engine"
+
+        config DIR_RIGHT_FWD_GPIO
+            string "Right FWD GPIO"
+
+        config DIR_RIGHT_FWD_PIN
+            int "Right FWD Pin"
+
+        config DIR_RIGHT_BWD_GPIO
+            string "Right BWD GPIO"
+
+        config DIR_RIGHT_BWD_PIN
+            int "Right FWD Pin"
+
+
+        config PWM_RIGHT_GPIO
+            string "Right PWM GPIO"
+
+        config PWM_RIGHT_PIN
+            int "Right PWM Pin"
+
+        config PWM_RIGHT_TIMER
+            string "Right PWM Timer"
+
+        config PWM_RIGHT_OC
+            int "Right PWM Timer Output"
+
+    endmenu # Chassis config
+    endif # Chassis config
+
+    if USE_ENCODERS
+    menu "Encoders configuration"
+        
+        comment "MCU core configuration"
+
+        config ENC_APB1
+            string "Encoders APB1 init"
+
+        config ENC_APB2
+            string "Encoders APB2 init"
+
+        comment "Left encoder"
+
+        config ENC_LEFT_A_GPIO
+            string "Left encoder A channel GPIO"
+
+        config ENC_LEFT_A_PIN
+            int "Left encoder A channel Pin"
+
+        config ENC_LEFT_B_GPIO
+            string "Left encoder B channel GPIO"
+
+        config ENC_LEFT_B_PIN
+            int "Left encoder B channel Pin"
+
+        config ENC_LEFT_TIMER
+            string "Left encoder Timer"
+
+        config ENC_LEFT_INV
+            bool "Inverse polarity for Left encoder"
+
+        config ENC_LEFT_SWAP
+            bool "Swap channels for Left encoder (change direction)"
+            
+        comment "Right encoder"
+
+        config ENC_RIGHT_A_GPIO
+            string "Right encoder A channel GPIO"
+
+        config ENC_RIGHT_A_PIN
+            int "Right encoder A channel Pin"
+
+        config ENC_RIGHT_B_GPIO
+            string "Right encoder B channel GPIO"
+
+        config ENC_RIGHT_B_PIN
+            int "Right encoder B channel Pin"
+
+        config ENC_RIGHT_TIMER
+            string "Right encoder Timer"
+
+        config ENC_RIGHT_INV
+            bool "Inverse ploarity for Right encoder"
+
+        config ENC_RIGHT_SWAP
+            bool "Swap channels for Right encoder (change direction)"
+
+        comment "Physical parameters"
+
+        config ENC_WHEEL_RADIUS
+            int "Encoder wheel radius (in mm)"
+
+        config ENC_RESOLUTION
+            int "Encoder resolution (clicks per revolution)"
+
+    endmenu # Encoders config
+    endif # Encoders config
+
+    if USE_PID
+    menu "Stabilisation configuration"
+
+        config CHASSIS_RADIUS
+            int "Robot chassis radius (in mm)"
+
+    endmenu # Stabilisation config
+    endif # Stabilisation config
+
+endmenu # Manual robot configuration
+
+endif
