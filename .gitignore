@@ -15,7 +15,3 @@
 *.swp
 .*.swp
 tags
-
-# Personal
-satellite/Makefile
-cerebellum/Makefile

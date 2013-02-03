@@ -13,15 +13,11 @@
 
 volatile uint8_t max_speed = 255; // maximum speed (calibrated)
 
-volatile uint8_t stat = 0;
-uint8_t i;
-
 int main(void)
 {
     // initialisation
     led_init();
     uart_init();
-    task_init();
     encoder_init();
     driver_init();
  
@@ -31,9 +27,15 @@ int main(void)
 
     sei();
 
+    DDRB &= ~(1<<1);
+    PORTB |= (1<<1);
+
     while(1)
     {
-        task_manager();
+        if(PINB & (1<<1))
+            led_on();
+        else
+            led_off();
     }
 
     return 0;

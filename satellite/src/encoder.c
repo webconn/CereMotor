@@ -131,8 +131,8 @@ ISR(TIMER0_OVF_vect)
     if(flag_auto)
     {
         error = rq_speed - speed;
-        error = driver_get_speed() + _prop*(error >> 3) - _diff*(last_error >> 4);
-        last_error = rq_speed - speed;
+        last_error = error;
+        error = (driver_get_speed() + _prop*(error >> 3) - _diff*(last_error >> 4)) ;
         if(error > 1024) error = 1024;
         else if(error < 0) error = 0;
         driver_set_speed(error);

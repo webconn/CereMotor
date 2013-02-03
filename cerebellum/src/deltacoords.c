@@ -43,9 +43,7 @@ int32_t getCentralSpeed(int32_t speed1, int32_t speed2)
     // two speeds
     // I dont think than we need to set fixed point for calculation (in case we will have
     // half part), so, let's just sum it and move binary right (division by 2)
-    int32_t sp = (speed1 + speed2) / 2;
-    if(sp < 0) sp = - sp;
-    return sp;
+    return (speed1 + speed2) / 2;
 }
 
 float getDeltaAngle(int32_t speed1, int32_t speed2)
@@ -53,7 +51,7 @@ float getDeltaAngle(int32_t speed1, int32_t speed2)
     // Sure, I'm afraid of floating point computing on MCU, but
     // we have no alternatives (hmm.. only to reverce this and 
     // to create a large table of values of trigonometry :))
-    return (float) ((speed2 - speed1) / (2 * getChassisRadius()));
+    return ((float) (speed1 - speed2) / ((float)4*getChassisRadius()));
 }
 
 void updateCoords(int32_t speed1, int32_t speed2)
@@ -63,6 +61,7 @@ void updateCoords(int32_t speed1, int32_t speed2)
 
     // Stage 2. Get delta angle
     float deltaAngle = getDeltaAngle(speed1, speed2);
+    
 
     // Stage 3. Sum deltaAngle with old data of angle
     _current_coords.angle += deltaAngle;
@@ -72,10 +71,7 @@ void updateCoords(int32_t speed1, int32_t speed2)
     // Hmm... Here we should think, which operation is faster:
     // sin() or cos(), and use the fastest one.
     // Another side of the triangle should be found
-    // using Pythagorean theorem (emm...)
-    //
-    // TODO: Analyse speed of calculation:
-    // sin(), cos(), sqrt()
+    // using Pythagorean theorem (emm..)
     //
     // TODO: Fix my brain about signs in deltas
     

@@ -24,13 +24,12 @@ USART_RX_vect:
     push ZL
     push ZH
 
-    rcall led_on
 
     in R20, _SFR_IO_ADDR(UDR)   ; receive the character
 
     dec R20                     ; decrement - we haven't command 0x00, only 0x01 and higher
 
-    cpi R20, 0x0F               ; check input value for range 0x01 - 0x0E
+    cpi R20, 0x10               ; check input value for range 0x01 - 0x0E
     brcc uartint_close          ; if higher - do nothing
 
     lsl R20                     ; shift it left (equals *2)
@@ -52,7 +51,6 @@ USART_RX_vect:
 
     icall
 
-    rcall led_off
 
 uartint_close:
     pop ZH
@@ -67,7 +65,7 @@ uartint_close:
 
 .extern set_auto, set_manual
 
-Commands: .word pm(Enc_getdir), pm(Drv_getdir), pm(Enc_getlen), pm(Enc_getpath), pm(Drv_getspeed), pm(Rq_getspeed), pm(Enc_getspeed), pm(Drv_setdir), pm(Drv_setspeed), pm(Rq_setspeed), pm(encoder_reset), pm(set_manual), pm(set_auto), pm(Rq_setprop), pm(Rq_setdiff)
+Commands: .word pm(Enc_getdir), pm(Drv_getdir), pm(Enc_getlen), pm(Enc_getpath), pm(Drv_getspeed), pm(Rq_getspeed), pm(Enc_getspeed), pm(Drv_setdir), pm(Drv_setspeed), pm(Rq_setspeed), pm(encoder_reset), pm(set_manual), pm(set_auto), pm(Rq_setprop), pm(Rq_setdiff), pm(Drv_setfspeed)
 
 ; Here comes the command handlers
 
@@ -259,6 +257,24 @@ Drv_setspeed:
     
     ret
 
+Drv_setfspeed:
+
+    push r24
+    push r25
+
+    rcall UART_receive
+    mov r25, r24
+
+    rcall UART_receive
+
+    .extern driver_set_fspeed
+    rcall driver_set_fspeed
+
+    pop r25
+    pop r24
+
+    ret
+    
 Rq_setspeed:
 
     push r24

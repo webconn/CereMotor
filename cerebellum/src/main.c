@@ -3,11 +3,14 @@
 #include <cerebellum/led.h>
 #include <cerebellum/uart.h>
 #include <cerebellum/pid.h>
+#include <cerebellum/deltacoords.h>
+#include <cerebellum/robot.h>
 
 #include <stm32f10x.h>
 #include <stm32f10x_usart.h>
 
 #include <stdio.h>
+#include <math.h>
 
 volatile uint32_t _running = 0;
 volatile int32_t _pwm = 0;
@@ -20,6 +23,8 @@ void SysTick_Handler(void)
     int32_t leftSpeed, rightSpeed, error, leftPWM, rightPWM;
     leftSpeed = encoder_getPath(1);
     rightSpeed = encoder_getPath(0);
+
+    updateCoords(encoder_getDelta(0), encoder_getDelta(1));
 
     // PID stabilisation algo
     if(_running == 1) // line
@@ -90,12 +95,17 @@ int main(void)
 
     configPID(&cnf);
 
-    int spd = 4096, stab = 1;
+    // Turning on LED - end of initialisation
+    led_on();
 
-            led_on();
+    // Debug some data
+    printf("Radius: %d ticks\n\n\r", (int) getChassisRadius());
+
     while(1)
     {
-        if(USART_GetFlagStatus(USART1, USART_FLAG_RXNE) != RESET)
+        printf("Coords: (%d, %d) Angle: %f DeltaAngle: %f \r", (int) getX(), (int) getY(), (float) getAngle(), (float) getDeltaAngle(encoder_getDelta(0), encoder_getDelta(1)));
+
+        /*if(USART_GetFlagStatus(USART1, USART_FLAG_RXNE) != RESET)
         {
             uint32_t ch = USART_ReceiveData(USART1);
             chassis_stop();
@@ -148,8 +158,10 @@ int main(void)
                     spd = 8000;
                     break;
             }
-        }
+        }*/
     }
+
+    while(1);;; // end of program
     
     return 0;
 }

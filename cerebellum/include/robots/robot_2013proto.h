@@ -74,7 +74,7 @@
 // CONFIG_ENC_RIGHT_INV is not set
 // CONFIG_ENC_RIGHT_SWAP is not set
 
-#define CONFIG_ENC_WHEEL_RADIUS 20
+#define CONFIG_ENC_WHEEL_RADIUS 24
 #define CONFIG_ENC_RESOLUTION 3000
 
 /**
@@ -86,7 +86,7 @@
  * @{
  */
 
-#define CONFIG_CHASSIS_RADIUS 102.5
+#define CONFIG_CHASSIS_RADIUS 98.5
 
 /**
  * @}

@@ -12,7 +12,7 @@ void driver_init(void)
     // Configuring timer
     // Compare ch.A, PWM Phase Correct, 10-bit
     TCCR1A = (1<<COM1B1)|(1<<WGM11)|(1<<WGM10);
-    TCCR1B = (1<<CS11)|(1<<CS10); // clock divide by 64
+    TCCR1B = (1<<CS11); // clock divide by 64
 }
 
 void driver_set_dir(uint8_t dir)
@@ -42,4 +42,20 @@ void driver_stop(void)
 uint8_t driver_get_dir(void)
 {
     return drv_get_dir();
+}
+
+void driver_set_fspeed(int16_t speed)
+{
+    if(speed > 0)
+        driver_set_dir(FORWARD);
+    else
+    {
+        driver_set_dir(BACKWARD);
+        speed = -speed;
+    }
+    
+    if(speed < 1024)
+        driver_set_speed((uint16_t) speed);
+    else
+        PORTB |= 3<<2;
 }

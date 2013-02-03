@@ -9,10 +9,6 @@
 #ifndef CEREBELLUM_PID_H
 #define CEREBELLUM_PID_H
 
-#include <math.h>
-
-#define mmToTicks(m) ((uint32_t) ((m*CONFIG_ENC_RESOLUTION)/(2*CONFIG_ENC_WHEEL_RADIUS*M_PI)))
-
 #include <stm32f10x.h>
 #include <cerebellum/robot.h>
 
