@@ -3,13 +3,13 @@
 
 pidConfig _pid;
 
-int32_t calculateLinError(int32_t speed1, int32_t speed2)
+int32_t pid_calculateLinError(int32_t speed1, int32_t speed2)
 {
     // The linear error is just substraction of speeds
     return speed1-speed2;
 }
 
-int32_t calculateRadError(int32_t speed1, int32_t speed2, int32_t radius)
+int32_t pid_calculateRadError(int32_t speed1, int32_t speed2, int32_t radius)
 {
     // Radial error is something more difficult
     // In fact, the dependence looks like this:
@@ -24,7 +24,7 @@ int32_t calculateRadError(int32_t speed1, int32_t speed2, int32_t radius)
     return (int32_t) (speed1 / (int32_t) (radius - mmToTicks(CONFIG_CHASSIS_RADIUS))) - (int32_t) (speed2 / (int32_t) (radius + mmToTicks(CONFIG_CHASSIS_RADIUS)));
 }
 
-int32_t getRequiredPWM(int32_t requiredSpeed)
+int32_t pid_getRequiredPWM(int32_t requiredSpeed)
 {
     // TODO it.
     // We need to get relations between IRL speed and PWM wideness.
@@ -40,7 +40,7 @@ int32_t getRequiredPWM(int32_t requiredSpeed)
     return 16*requiredSpeed; 
 }
 
-void updatePID(int32_t error, int32_t requiredPWM, int32_t * value1, int32_t * value2)
+void pid_update(int32_t error, int32_t requiredPWM, int32_t * value1, int32_t * value2)
 {
     // 1. Calculating integral
     _pid.i_mem += error;
@@ -65,13 +65,13 @@ void updatePID(int32_t error, int32_t requiredPWM, int32_t * value1, int32_t * v
     // TODO: if something goes wrong, just change signs :)
 }
 
-void resetPID(void)
+void pid_reset(void)
 {
     _pid.i_mem = 0;
     _pid.d_mem = 0;
 }
 
-void configPID(pidConfig * data)
+void pid_config(pidConfig * data)
 {
     _pid.p_gain = data->p_gain;
     _pid.i_rgain = data->i_rgain;

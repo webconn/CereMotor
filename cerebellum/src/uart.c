@@ -20,7 +20,6 @@
 
 void uart_init(uint32_t uart, uint32_t baudrate)
 {
-
     USART_InitTypeDef usart = {
         .USART_BaudRate = baudrate,
         .USART_WordLength = USART_WordLength_8b,
@@ -59,6 +58,15 @@ void uart_init(uint32_t uart, uint32_t baudrate)
     }
     else if(uart == 3)
     {
+        RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
+        RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
+
+        tx.GPIO_Pin = GPIO_Pin_10;
+        rx.GPIO_Pin = GPIO_Pin_11;
+
+        GPIO_Init(GPIOB, &tx);
+        GPIO_Init(GPIOB, &tx);
+
         USART_Init(USART3, &usart);
         USART_Cmd(USART3, ENABLE);
     }
@@ -78,16 +86,17 @@ int uart_send(int uart, int ch)
     }
     else if(uart == 3)
     {
-        USART_SendData(USART1, (uint8_t) ch);
-        while (USART_GetFlagStatus(USART2, USART_FLAG_TC) == RESET);;;
+        USART_SendData(USART3, (uint8_t) ch);
+        while (USART_GetFlagStatus(USART3, USART_FLAG_TC) == RESET);;;
     }
 
     return ch;
 }
 
+// Don't touch this function! :) It just works
 int _write(int file, char * ptr, int len)
 {
-    uart_send(1, *(ptr-1));
-    if(len == 1) uart_send(1, *ptr);
+    uart_send(CONFIG_UART_STDOUT, *(ptr-1));
+    if(len == 1) uart_send(3, *ptr);
     return 1;
 }

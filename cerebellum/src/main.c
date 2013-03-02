@@ -5,73 +5,56 @@
 #include <cerebellum/pid.h>
 #include <cerebellum/deltacoords.h>
 #include <cerebellum/robot.h>
+#include <cerebellum/movement.h>
 
 #include <stm32f10x.h>
 #include <stm32f10x_usart.h>
+#include <stm32f10x_gpio.h>
 
 #include <stdio.h>
 #include <math.h>
 
-volatile uint32_t _running = 0;
-volatile int32_t _pwm = 0;
-volatile int32_t _radius = 0;
+volatile uint32_t _delay = 0;
 
 void SysTick_Handler(void)
 {
     encoders_parser(); // update encoders values
 
-    int32_t leftSpeed, rightSpeed, error, leftPWM, rightPWM;
-    leftSpeed = encoder_getPath(1);
-    rightSpeed = encoder_getPath(0);
-
     updateCoords(encoder_getDelta(0), encoder_getDelta(1));
-
-    // PID stabilisation algo
-    if(_running == 1) // line
-    {
-        error = calculateLinError(leftSpeed, rightSpeed);
-        updatePID(error, _pwm, &leftPWM, &rightPWM);
-        chassis_write(leftPWM, rightPWM);
-    }
-    else if(_running == 2) // radius
-    {
-        error = calculateRadError(leftSpeed, rightSpeed, _radius);
-        updatePID(error, _pwm, &leftPWM, &rightPWM);
-        chassis_write(leftPWM, rightPWM);
-    }
-    else
-    {
-     //   chassis_write(0, 0);
-    }
+    move_tick();
+    
+    if(_delay > 0)
+        _delay--;
 }
-
-void chassis_line(int32_t pwm)
+/*
+void goto_point(int32_t x, int32_t y, int32_t pwm)
 {
-    resetPID();
-    encoder_reset(1);
-    encoder_reset(0);
-    _running = 1;
-    _pwm = pwm;
+    // Stage 1. Get current coordinates
+    int32_t cx, cy;
+    cx = getX();
+    cy = getY();
+
+    // Stage 2. Get current angle
+    float cangle = getAngle();
+
+    // Stage 3. Calculate path
+    uint32_t path = (uint32_t) sqrt((x-cx)*(x-cx) + (y-cy)*(y-cy));
+    float angle = atan2((float) (y-cy), (float) (x-cx));
+
+    // Stage 4. Rotate robot to the new angle
+    chassis_setAngle(pwm, angle);
+
+    // Stage 5. Go to the path
+    chassis_line(pwm, path);
+
+    // Here we should insert some coordinates stabilisation
 }
+*/
 
-void chassis_rad(int32_t pwm, int32_t radius)
+void delay(uint32_t time)
 {
-    resetPID();
-    _running = 2;
-    _pwm = pwm;
-    _radius = radius;
-}
-
-void chassis_stop(void)
-{
-    _running = 0;
-}
-
-void _delay()
-{
-    int i;
-    for(i=0; i<9999; i++)
-        asm volatile("nop");
+    _delay = time / 10;
+    while(_delay > 0);;;
 }
 
 int main(void)
@@ -79,6 +62,7 @@ int main(void)
     chassis_init();
     encoders_init();
     led_init();
+    uart_init(3, 9600);
     uart_init(1, 57600);
 
     SysTick_Config(SystemCoreClock / 100); // 10 ms timer period
@@ -93,72 +77,31 @@ int main(void)
         .i_min = -8191
     };
 
-    configPID(&cnf);
+    pid_config(&cnf);
 
     // Turning on LED - end of initialisation
     led_on();
 
-    // Debug some data
-    printf("Radius: %d ticks\n\n\r", (int) getChassisRadius());
+    // dirty-hack - disable JTAG using registers
+    AFIO->MAPR &= ~(7 << 24);
+    AFIO->MAPR |= (4 << 24);
 
-    while(1)
+        move_line(6000, 5, mmToTicks(1000));
+    while(move_isBusy())
     {
-        printf("Coords: (%d, %d) Angle: %f DeltaAngle: %f \r", (int) getX(), (int) getY(), (float) getAngle(), (float) getDeltaAngle(encoder_getDelta(0), encoder_getDelta(1)));
+        //chassis_write(2048, 2048);
+        //delay(100);
+        //chassis_write(0, 0);
+        //delay(1000);
+        // Trying to move forward by new library
 
-        /*if(USART_GetFlagStatus(USART1, USART_FLAG_RXNE) != RESET)
-        {
-            uint32_t ch = USART_ReceiveData(USART1);
-            chassis_stop();
+        printf("PWM: %06d, %06d, ENC: %06d, %06d, ST: %d\n\r", (int) move_getPWM(0), (int) move_getPWM(1), (int) encoder_getDelta(0), (int) encoder_getDelta(1), in);
 
-            switch(ch)
-            {
-                case 'w':
-                    if(stab)
-                        chassis_line(spd);
-                    else
-                        chassis_write(spd, spd);
-                    break;
-                case 'd':
-                    chassis_write(-spd, spd);
-                    break;
-                case 's':
-                    if(stab)
-                        chassis_line(-spd);
-                    else
-                        chassis_write(-spd, -spd);
-                    break;
-                case 'a':
-                    chassis_write(spd, -spd);
-                    break;
-                case 'z':
-                    chassis_write(0, 0);
-                    break;
-                case 'm':
-                    if(stab)
-                    {
-                        led_off();
-                        stab = 0;
-                    }
-                    else
-                    {
-                        stab = 1;
-                        led_on();
-                    }
-                    break;
-                case '1':
-                    spd = 1000;
-                    break;
-                case '2':
-                    spd = 2500;
-                    break;
-                case '3':
-                    spd = 5000;
-                    break;
-                case '4':
-                    spd = 8000;
-                    break;
-            }
-        }*/
+        // Debugging
+        
+        //printf("S:(%06d,%06d) \r", (int) leftSpeed, (int) rightSpeed);
+        //printf("C:(%05d, %05d) A:%f\r", (int) getX(), (int) getY(), (float) getAngle());
+
     }
 
     while(1);;; // end of program

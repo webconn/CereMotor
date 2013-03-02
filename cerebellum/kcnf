@@ -18,6 +18,10 @@ menu "Robot modules"
         
 endmenu
 
+config UART_STDOUT
+    int "Default stdout UART"
+    default 1
+
 choice
     prompt "Robot config set"
     

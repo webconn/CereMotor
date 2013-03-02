@@ -26,11 +26,11 @@ typedef struct{
     int32_t d_mem;
 } pidConfig;
 
-int32_t getRequiredPWM(int32_t requiredSpeed);
-int32_t calculateLinError(int32_t speed1, int32_t speed2);
-int32_t calculateRadError(int32_t speed1, int32_t speed2, int32_t radius);
-void updatePID(int32_t error, int32_t requiredPWM, int32_t * pwm1, int32_t * pwm2);
-void resetPID(void);
-void configPID(pidConfig * data);
+int32_t pid_getRequiredPWM(int32_t requiredSpeed);
+int32_t pid_calculateLinError(int32_t speed1, int32_t speed2);
+int32_t pid_calculateRadError(int32_t speed1, int32_t speed2, int32_t radius);
+void pid_update(int32_t error, int32_t requiredPWM, int32_t * pwm1, int32_t * pwm2);
+void pid_reset(void);
+void pid_config(pidConfig * data);
 
 #endif

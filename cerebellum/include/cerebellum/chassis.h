@@ -13,7 +13,8 @@
 
 void chassis_init(void);
 void chassis_write(int16_t left, int16_t right);
-void chassis_break(uint16_t left, uint16_t right);
-void chassis_set_dir(uint8_t engine, uint8_t direction);
+void chassis_break(int16_t left, int16_t right);
+void chassis_setDir(uint8_t engine, uint8_t direction);
+int32_t chassis_getPWM(uint8_t engine);
 
 #endif

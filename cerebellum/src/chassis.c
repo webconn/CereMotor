@@ -147,22 +147,22 @@ void chassis_write(int16_t left, int16_t right)
     if(left < 0)
     {
         left = -left;
-        chassis_set_dir(LEFT, BACKWARD);
+        chassis_setDir(LEFT, BACKWARD);
     }
     else
     {
-        chassis_set_dir(LEFT, FORWARD);
+        chassis_setDir(LEFT, FORWARD);
     }
 
     // 2. Parsing right engine info
     if(right < 0)
     {
         right = -right;
-        chassis_set_dir(RIGHT, BACKWARD);
+        chassis_setDir(RIGHT, BACKWARD);
     }
     else
     {
-        chassis_set_dir(RIGHT, FORWARD);
+        chassis_setDir(RIGHT, FORWARD);
     }
 
     // 3. Updating PWM timers
@@ -190,7 +190,7 @@ void chassis_write(int16_t left, int16_t right)
     #endif
 }
 
-void chassis_set_dir(uint8_t engine, uint8_t direction)
+void chassis_setDir(uint8_t engine, uint8_t direction)
 {
     if(engine)
     {
@@ -219,3 +219,23 @@ void chassis_set_dir(uint8_t engine, uint8_t direction)
         }
     }
 }
+
+void chassis_break(int16_t left, int16_t right)
+{
+    chassis_write(left, right);
+    
+    // Breaking level set by constant
+    #ifdef CONFIG_CHASSIS_BREAK_LEVEL_VCC
+        GPIO_SetBits(CONFIG_DIR_LEFT_FWD_GPIO, 1<<CONFIG_DIR_LEFT_FWD_PIN);
+        GPIO_SetBits(CONFIG_DIR_LEFT_BWD_GPIO, 1<<CONFIG_DIR_LEFT_BWD_PIN);
+        GPIO_SetBits(CONFIG_DIR_RIGHT_FWD_GPIO, 1<<CONFIG_DIR_RIGHT_FWD_PIN);
+        GPIO_SetBits(CONFIG_DIR_RIGHT_BWD_GPIO, 1<<CONFIG_DIR_RIGHT_BWD_PIN);
+    #endif
+    #ifdef CONFIG_CHASSIS_BREAK_LEVEL_GND
+        GPIO_ResetBits(CONFIG_DIR_LEFT_FWD_GPIO, 1<<CONFIG_DIR_LEFT_FWD_PIN);
+        GPIO_ResetBits(CONFIG_DIR_LEFT_BWD_GPIO, 1<<CONFIG_DIR_LEFT_BWD_PIN);
+        GPIO_ResetBits(CONFIG_DIR_RIGHT_FWD_GPIO, 1<<CONFIG_DIR_RIGHT_FWD_PIN);
+        GPIO_ResetBits(CONFIG_DIR_RIGHT_BWD_GPIO, 1<<CONFIG_DIR_RIGHT_BWD_PIN);
+    #endif
+}
+
