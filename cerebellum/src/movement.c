@@ -121,6 +121,15 @@ inline void _move_line(void)
     // 3. Updating PID data
     pid_update(error, _movePWM, &leftPWM, &rightPWM);
 
+    if(leftPWM > CONFIG_PWM_ACCURACY)
+        leftPWM = CONFIG_PWM_ACCURACY;
+    if(leftPWM < -CONFIG_PWM_ACCURACY)
+        leftPWM = -CONFIG_PWM_ACCURACY;
+    if(rightPWM > CONFIG_PWM_ACCURACY)
+        rightPWM = CONFIG_PWM_ACCURACY;
+    if(rightPWM < -CONFIG_PWM_ACCURACY)
+        rightPWM = -CONFIG_PWM_ACCURACY;
+
     // 4. Write data to chassis
     chassis_write(leftPWM, rightPWM);
 }
