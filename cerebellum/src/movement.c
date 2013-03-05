@@ -46,14 +46,12 @@ inline void _move_stay(void)
 
 // Line movement tick function
 
-uint16_t _movePWM, _moveAcc;
-uint16_t _destPWM;
-uint32_t _accPath = 0, _destPath;
+volatile uint16_t _movePWM, _moveAcc;
+volatile uint16_t _destPWM;
+volatile uint32_t _accPath = 0, _destPath;
+volatile int32_t lastSpeed = 0;
 
-int32_t leftPWM, rightPWM;
-#ifdef CONFIG_STAB_ALGO_ANGLE
-float origAngle;
-#endif
+volatile int32_t leftPWM, rightPWM;
 
 /**
  * Move by line tick
@@ -63,10 +61,16 @@ inline void _move_line(void)
     // Stabilisation algo depends on user selection - defined
 
     // 1. Get paths by both encoders
-    uint32_t leftPath = encoder_getPath(0);
-    uint32_t rightPath = encoder_getPath(1);
+    int32_t leftPath = encoder_getPath(0);
+    int32_t rightPath = encoder_getPath(1);
 
-    uint32_t aripPath = (leftPath + rightPath) >> 1; // sum and divide by 2
+    int32_t aripPath = (leftPath + rightPath) >> 1; // sum and divide by 2
+
+    int32_t leftSpeed = encoder_getDelta(0);
+    int32_t rightSpeed = encoder_getDelta(1);
+
+    int32_t acceleration = (leftSpeed + rightSpeed) >> 1 - lastSpeed;
+    lastSpeed = (leftSpeed + rightSpeed) >> 1;
 
     // Speed edjes: when starting and when stopping
     if(moveMode == 2) // normal operation (no brakes)
@@ -75,10 +79,15 @@ inline void _move_line(void)
         {
             _movePWM += _moveAcc;
         }
-        else if(_movePWM >= _destPWM && !_accPath) // start normal operaion
+        else // start normal operaion
         {
             _movePWM = _destPWM;
-            _accPath = aripPath; // get acceleration path
+        }
+
+        // Check real acceleration; if it less oq equal zero, save _accPath
+        if(acceleration <= 0 && !_accPath)
+        {
+            _accPath = aripPath;
         }
 
         // Check if we need to brake
@@ -90,8 +99,6 @@ inline void _move_line(void)
     else if(moveMode == 1)
     {
         // At this stage we need to control encoders speed
-        int16_t leftSpeed = encoder_getDelta(0);
-        int16_t rightSpeed = encoder_getDelta(1);
 
         if(leftSpeed > 5 && rightSpeed > 5) // speed down while we should move
             _movePWM -= _moveAcc;
@@ -118,7 +125,7 @@ inline void _move_line(void)
         int32_t error = (int32_t) ((angle - origAngle) * CONFIG_STAB_ALGO_ANGLE_K); // or change sign
     #endif
 
-    // 3. Updating PID data
+    // 3. Updating PID data (PWM overload calculated in this function)
     pid_update(error, _movePWM, &leftPWM, &rightPWM);
 
     // 4. Write data to chassis

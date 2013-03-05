@@ -70,8 +70,8 @@ int main(void)
     // Configuring PID
     pidConfig cnf = {
         .p_gain = 1,
-        .i_rgain = 10000,
-        .d_rgain = 100,
+        .i_rgain = 1000,
+        .d_rgain = 10,
         
         .i_max = 8191,
         .i_min = -8191
@@ -86,22 +86,11 @@ int main(void)
     AFIO->MAPR &= ~(7 << 24);
     AFIO->MAPR |= (4 << 24);
 
-        move_line(6000, 5, mmToTicks(1000));
+    move_line(6000, 5, mmToTicks(1000));
     while(move_isBusy())
     {
-        //chassis_write(2048, 2048);
-        //delay(100);
-        //chassis_write(0, 0);
-        //delay(1000);
         // Trying to move forward by new library
-
         printf("PWM: %06d, %06d, ENC: %06d, %06d, ST: %d\n\r", (int) move_getPWM(0), (int) move_getPWM(1), (int) encoder_getDelta(0), (int) encoder_getDelta(1), in);
-
-        // Debugging
-        
-        //printf("S:(%06d,%06d) \r", (int) leftSpeed, (int) rightSpeed);
-        //printf("C:(%05d, %05d) A:%f\r", (int) getX(), (int) getY(), (float) getAngle());
-
     }
 
     while(1);;; // end of program

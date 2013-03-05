@@ -59,10 +59,19 @@ void pid_update(int32_t error, int32_t requiredPWM, int32_t * value1, int32_t * 
     // 3. Calculating full sentence
     int32_t correction = (error * _pid.p_gain) + (integral / _pid.i_rgain) - (derivative / _pid.d_rgain);
 
-    // 4. Return new data
+    // 4. Calculate new data
     *value1 = requiredPWM + correction;
     *value2 = requiredPWM - correction;
-    // TODO: if something goes wrong, just change signs :)
+
+    // 5. Check for PWM overload
+    if(value1 > CONFIG_PWM_ACCURACY)
+        value1 = CONFIG_PWM_ACCURACY;
+    else if(value1 < -CONFIG_PWM_ACCURACY)
+        value1 = -CONFIG_PWM_ACCURACY;
+    if(value2 > CONFIG_PWM_ACCURACY)
+        value2 = CONFIG_PWM_ACCURACY;
+    else if(value2 < -CONFIG_PWM_ACCURACY)
+        value2 = -CONFIG_PWM_ACCURACY;
 }
 
 void pid_reset(void)
