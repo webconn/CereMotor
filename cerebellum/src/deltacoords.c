@@ -51,7 +51,7 @@ float getDeltaAngle(int32_t speed1, int32_t speed2)
     // Sure, I'm afraid of floating point computing on MCU, but
     // we have no alternatives (hmm.. only to reverce this and 
     // to create a large table of values of trigonometry :))
-    return ((float) (speed1 - speed2) / ((float)4*getChassisRadius()));
+    return ((float) (speed1 - speed2) / ((float)2*getChassisRadius()));
 }
 
 void updateCoords(int32_t speed1, int32_t speed2)
