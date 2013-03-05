@@ -64,14 +64,14 @@ void pid_update(int32_t error, int32_t requiredPWM, int32_t * value1, int32_t * 
     *value2 = requiredPWM - correction;
 
     // 5. Check for PWM overload
-    if(value1 > CONFIG_PWM_ACCURACY)
-        value1 = CONFIG_PWM_ACCURACY;
-    else if(value1 < -CONFIG_PWM_ACCURACY)
-        value1 = -CONFIG_PWM_ACCURACY;
-    if(value2 > CONFIG_PWM_ACCURACY)
-        value2 = CONFIG_PWM_ACCURACY;
-    else if(value2 < -CONFIG_PWM_ACCURACY)
-        value2 = -CONFIG_PWM_ACCURACY;
+    if(*value1 > CONFIG_PWM_ACCURACY)
+        *value1 = CONFIG_PWM_ACCURACY;
+    else if(*value1 < -CONFIG_PWM_ACCURACY)
+        *value1 = -CONFIG_PWM_ACCURACY;
+    if(*value2 > CONFIG_PWM_ACCURACY)
+        *value2 = CONFIG_PWM_ACCURACY;
+    else if(*value2 < -CONFIG_PWM_ACCURACY)
+        *value2 = -CONFIG_PWM_ACCURACY;
 }
 
 void pid_reset(void)

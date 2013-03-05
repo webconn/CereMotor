@@ -46,12 +46,12 @@ inline void _move_stay(void)
 
 // Line movement tick function
 
-volatile uint16_t _movePWM, _moveAcc;
-volatile uint16_t _destPWM;
-volatile uint32_t _accPath = 0, _destPath;
-volatile int32_t lastSpeed = 0;
+uint16_t _movePWM, _moveAcc;
+uint16_t _destPWM;
+uint32_t _accPath = 0, _destPath;
+int32_t lastSpeed = 0;
 
-volatile int32_t leftPWM, rightPWM;
+int32_t leftPWM, rightPWM;
 
 /**
  * Move by line tick
@@ -69,7 +69,7 @@ inline void _move_line(void)
     int32_t leftSpeed = encoder_getDelta(0);
     int32_t rightSpeed = encoder_getDelta(1);
 
-    int32_t acceleration = (leftSpeed + rightSpeed) >> 1 - lastSpeed;
+    int32_t acceleration = ((leftSpeed + rightSpeed) >> 1) - lastSpeed;
     lastSpeed = (leftSpeed + rightSpeed) >> 1;
 
     // Speed edjes: when starting and when stopping
