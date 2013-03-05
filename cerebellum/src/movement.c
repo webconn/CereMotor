@@ -87,7 +87,8 @@ inline void _move_line(void)
         // Check real acceleration; if it less oq equal zero, save _accPath
         if(acceleration <= 0 && !_accPath)
         {
-            _accPath = aripPath;
+            _accPath = (aripPath * 7) >> 3;
+
         }
 
         // Check if we need to brake
