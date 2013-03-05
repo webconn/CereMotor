@@ -5,7 +5,8 @@
 
 // Functions
 void move_tick(void);
-void move_line(uint16_t pwm, uint16_t acceleration, uint32_t path);
+void move_line(uint32_t pwm, uint32_t acceleration, uint32_t path);
+void move_rotate(uint32_t path, uint32_t acceleration, float angle);
 int32_t move_getPWM(uint8_t val);
 int move_isBusy(void);
 
