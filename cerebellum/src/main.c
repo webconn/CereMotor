@@ -86,7 +86,8 @@ int main(void)
     AFIO->MAPR &= ~(7 << 24);
     AFIO->MAPR |= (4 << 24);
 
-    move_line(6000, 5, mmToTicks(1000));
+    //move_line(6000, 5, mmToTicks(1000));
+    move_rotate(6000, 20, 3.14159);
     while(move_isBusy())
     {
         // Trying to move forward by new library

@@ -245,7 +245,6 @@ void move_rotate(uint32_t pwm, uint32_t acceleration, float dAngle)
     
     // 2. Run algo in background
     moveMode = 4;
-    
 }
 
 /**
