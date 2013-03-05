@@ -179,11 +179,11 @@ inline void _move_stab(void)
     {
         if(sign)
         {
-            chassis_write(leftPWM, -rightPWM);
+            chassis_write(-leftPWM, rightPWM);
         }
         else
         {
-            chassis_write(-leftPWM, rightPWM);
+            chassis_write(leftPWM, -rightPWM);
         }
     }
 }
@@ -240,8 +240,8 @@ void move_rotate(uint32_t pwm, uint32_t acceleration, float dAngle)
     _destPWM = pwm;
     _moveAcc = acceleration;
 
-    if(dAngle < 0) sign = 1;
-    else sign = 0;
+    if(dAngle < 0) sign = 0;
+    else sign = 1;
     
     // 2. Run algo in background
     moveMode = 4;
