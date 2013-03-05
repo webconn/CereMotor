@@ -70,13 +70,13 @@ inline void _move_stab(void)
     {
         if(sign)
         {
-            rightSpeed = -rightSpeed;
-            rightPath = -rightPath;
+            leftSpeed = -leftSpeed;
+            leftPath = -leftPath;
         }
         else
         {
-            leftSpeed = -leftSpeed;
-            leftPath = -leftPath;
+            rightSpeed = -rightSpeed;
+            rightPath = -rightPath;
         }
     }
 
