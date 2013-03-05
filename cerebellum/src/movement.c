@@ -50,6 +50,7 @@ uint16_t _movePWM, _moveAcc;
 uint16_t _destPWM;
 uint32_t _accPath = 0, _destPath;
 int32_t lastSpeed = 0;
+int32_t _midAcc = 0;
 
 int32_t leftPWM, rightPWM;
 
@@ -70,6 +71,12 @@ inline void _move_line(void)
     int32_t rightSpeed = encoder_getDelta(1);
 
     int32_t acceleration = ((leftSpeed + rightSpeed) >> 1) - lastSpeed;
+    
+    if(!_midAcc)
+        _midAcc = acceleration;
+    else
+        _midAcc = (_midAcc + acceleration) >> 1;
+
     lastSpeed = (leftSpeed + rightSpeed) >> 1;
 
     // Speed edjes: when starting and when stopping
@@ -87,7 +94,7 @@ inline void _move_line(void)
         // Check real acceleration; if it less oq equal zero, save _accPath
         if(acceleration <= 0 && !_accPath)
         {
-            _accPath = (aripPath * 5) >> 3;
+            _accPath = aripPath;
         }
 
         // Check if we need to brake
@@ -100,7 +107,7 @@ inline void _move_line(void)
     {
         // At this stage we need to control encoders speed
 
-        if(leftSpeed > 5 && rightSpeed > 5) // speed down while we should move
+        if(leftSpeed > 5 && rightSpeed > 5 && acceleration >= -_midAcc) // speed down while we should move
             _movePWM -= _moveAcc;
 
         if(aripPath >= _destPath)
