@@ -240,7 +240,7 @@ void move_rotate(uint32_t pwm, uint32_t acceleration, float dAngle)
     _destPWM = pwm;
     _moveAcc = acceleration;
 
-    if(dAngle > 0) sign = 1;
+    if(dAngle < 0) sign = 1;
     else sign = 0;
     
     // 2. Run algo in background
