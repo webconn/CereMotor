@@ -101,7 +101,7 @@ inline void _move_line(void)
         // At this stage we need to control encoders speed
 
         if(leftSpeed > 5 && rightSpeed > 5) // speed down while we should move
-            _movePWM -= _moveAcc >> 1;
+            _movePWM -= _moveAcc;
 
         if(aripPath >= _destPath)
         {
