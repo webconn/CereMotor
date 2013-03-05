@@ -161,7 +161,6 @@ inline void _move_stab(void)
                 return;
             }
         }
-
     }
 
     // Stabilisation by encoders path
