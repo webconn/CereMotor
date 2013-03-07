@@ -277,5 +277,5 @@ void move_continue(void)
  */
 int move_isBusy(void)
 {
-    return (moveMode > 0);
+    return moveMode;
 }
