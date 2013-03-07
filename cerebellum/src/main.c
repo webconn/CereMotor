@@ -89,14 +89,35 @@ int main(void)
     AFIO->MAPR |= (4 << 24);
 
     //move_line(6000, 5, mmToTicks(500));
-    move_rotate(3200, 10, 3.14159);
-    while(move_isBusy())
-    {
-        // Trying to move forward by new library
-        //printf("PWM: %06d, %06d, ENC: %06d, %06d, ST: %d\n\r", (int) move_getPWM(0), (int) move_getPWM(1), (int) encoder_getDelta(0), (int) encoder_getDelta(1), in);
-        printf("ANG: %f, SPD: (%06d, %06d), MV: %d, MA: %06d\n\r", getAngle(), (int) encoder_getDelta(0), (int) encoder_getDelta(1), move_isBusy(), (int) move_getMidAcc());
+    int32_t minBrake = 40;
+    while(minBrake > 0)
+    {    
+        // 1. Set MinBrakeDelta
+        move_setMinBrakeDelta(minBrake);
+
+        // 2. Try to make full revolution
+        move_rotate(3200, 10, 2*3.14159);
+        while(move_isBusy()); // waiting for complete of action
+
+        // 3. Wait while robot moving
+        while(encoder_getDelta(1) > 0);
+        while(encoder_getDelta(0) > 0);
+
+        // 4. Measure brakepath
+        int32_t brakePath = ((encoder_getPath(0) + encoder_getPath(1)) / 2) - move_getBrakePath();
+
+        // 5. Check brakepath for minimal luft
+        if(brakePath <= mmToTicks(3))
+        {
+            printf("MBL=%02d, SUCCESS!\n\r", (int) minBrake);
+        }
+        else
+        {
+            printf("MBL=%02d\n\r", (int) minBrake);
+        }
+
     }
-    printf("ANG: %f, SPD: (%06d, %06d), MV: %d\n\r", getAngle(), (int) encoder_getDelta(0), (int) encoder_getDelta(1), move_isBusy());
+
 
     while(1);;; // end of program
     
