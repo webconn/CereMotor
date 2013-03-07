@@ -88,7 +88,7 @@ inline void _move_stab(void)
     // Speed edjes: when starting and when stopping
     if(moveMode == 2 || moveMode == 4) // normal operation (no brakes)
     {
-        if(!_midAcc)
+        if(!_midAcc && acceleration > 0)
         {
             _midAcc = acceleration;
             _numMeasures = 1;
@@ -114,6 +114,7 @@ inline void _move_stab(void)
             if((_destPath - aripPath) <= _accPath || (_destPath - aripPath) <= aripPath)
             {
                 moveMode = 1;
+                if(!_accPath) _midAcc /= _numMeasures;
             }
             
             // Check acceleration: if accelerated, take the measure
@@ -128,6 +129,7 @@ inline void _move_stab(void)
             if((destAngle - angle) <= _accAngle || (destAngle - angle) <= deltaAngle )
             {
                 moveMode = 3;
+                if(!_accAngle) _midAcc /= _numMeasures;
             }
 
             if(acceleration <= 0 && !_accAngle && _movePWM == _destPWM)
