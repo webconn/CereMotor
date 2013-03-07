@@ -142,6 +142,7 @@ inline void _move_stab(void)
     else if(moveMode == 1 || moveMode == 3)
     {
         // At this stage we need to control encoders speed
+        if(!_midAcc) _midAcc = 1;
 
         if(leftSpeed > 5 && rightSpeed > 5 && acceleration >= -_midAcc) // speed down while we should move
             _movePWM -= _moveAcc;
