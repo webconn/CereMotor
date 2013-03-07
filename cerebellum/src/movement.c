@@ -93,9 +93,9 @@ inline void _move_stab(void)
         {
             _midAcc = acceleration;
         }
-        else if(!_accPath && !_accAngle)
+        else if(acceleration > _midAcc)
         {
-            _midAcc += acceleration;
+            _midAcc = acceleration;
         }
 
         // Increase PWM
@@ -129,21 +129,17 @@ inline void _move_stab(void)
             if((destAngle - angle) <= _accAngle || (_accAngle == 0 && (destAngle - angle) <= deltaAngle))
             {
                 moveMode = 3;
-                if(_accAngle == 0) _midAcc = _midAcc / _numMeasures;
             }
 
             if(acceleration <= 0 && !_accAngle && _movePWM == _destPWM)
             {
                 _accAngle = angle - startAngle;
-                _midAcc = _midAcc * 2 / _numMeasures;
             }
         }
     }
     else if(moveMode == 1 || moveMode == 3)
     {
         // At this stage we need to control encoders speed
-        if(!_midAcc) _midAcc = 1;
-
         if(leftSpeed > 5 && rightSpeed > 5 && acceleration >= -_midAcc) // speed down while we should move
             _movePWM -= _moveAcc;
 
