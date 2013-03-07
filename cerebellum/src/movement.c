@@ -41,6 +41,7 @@ uint32_t _accPath = 0, _destPath;
 int32_t lastSpeed = 0;
 int32_t _midAcc = 0;
 uint32_t sign = 0;
+uint32_t _numMeasures = 0;
 
 float destAngle = 0, startAngle = 0, deltaAngle = 0;
 float _accAngle = 0;
@@ -83,9 +84,15 @@ inline void _move_stab(void)
     int32_t acceleration = ((leftSpeed + rightSpeed) / 2) - lastSpeed;
     
     if(!_midAcc)
+    {
         _midAcc = acceleration;
-    else if(!_accPath || !_accAngle)
-        _midAcc = (_midAcc + acceleration) / 2;
+        _numMeasures = 1;
+    }
+    else if(!_accPath && !_accAngle)
+    {
+        _midAcc += acceleration;
+        _numMeasures++;
+    }
 
     lastSpeed = (leftSpeed + rightSpeed) / 2;
 
@@ -113,6 +120,7 @@ inline void _move_stab(void)
             if(acceleration <= 0 && !_accPath)
             {
                 _accPath = aripPath;
+                _midAcc /= _numMeasures;
             }
         }
         else
@@ -125,6 +133,7 @@ inline void _move_stab(void)
             if(acceleration <= 0 && !_accAngle)
             {
                 _accAngle = angle - startAngle;
+                _midAcc /= _numMeasures;
             }
         }
     }
