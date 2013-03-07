@@ -135,7 +135,7 @@ inline void _move_stab(void)
             if(acceleration <= 0 && !_accAngle && _movePWM == _destPWM)
             {
                 _accAngle = angle - startAngle;
-                _midAcc = _midAcc / _numMeasures;
+                _midAcc = _midAcc * 2 / _numMeasures;
             }
         }
     }
