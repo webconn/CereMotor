@@ -117,7 +117,7 @@ inline void _move_stab(void)
         }
         else
         {   
-            if((destAngle - angle) <= 2*_accAngle || (destAngle - angle) <= deltaAngle)
+            if((destAngle - angle) <= _accAngle || (destAngle - angle) <= deltaAngle)
             {
                 moveMode = 3;
             }

@@ -92,6 +92,7 @@ int main(void)
     {
         // Trying to move forward by new library
         //printf("PWM: %06d, %06d, ENC: %06d, %06d, ST: %d\n\r", (int) move_getPWM(0), (int) move_getPWM(1), (int) encoder_getDelta(0), (int) encoder_getDelta(1), in);
+        printf("ANG: %f, SPD: (%06d, %06d)\n\r", getAngle(), (int) encoder_getDelta(0), (int) encoder_getDelta(1));
     }
 
     while(1);;; // end of program
