@@ -173,7 +173,7 @@ inline void _move_stab(void)
     }
 
     // Stabilisation by encoders path
-    int32_t error = pid_calculateLinError(leftPath, rightPath);
+    int32_t error = pid_calculateLinError(rightPath, leftPath);
 
     // 3. Updating PID data (PWM overload calculated in this function)
     pid_update(error, _movePWM, &leftPWM, &rightPWM);
