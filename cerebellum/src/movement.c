@@ -117,7 +117,7 @@ inline void _move_stab(void)
             }
             
             // Check acceleration: if accelerated, take the measure
-            if(acceleration <= 0 && !_accPath)
+            if(acceleration <= 0 && !_accPath && _movePWM == _destPWM)
             {
                 _accPath = aripPath;
                 _midAcc /= _numMeasures;
@@ -125,12 +125,12 @@ inline void _move_stab(void)
         }
         else
         {   
-            if((destAngle - angle) <= _accAngle || (destAngle - angle) <= deltaAngle)
+            if((destAngle - angle) <= _accAngle || (destAngle - angle) <= deltaAngle )
             {
                 moveMode = 3;
             }
 
-            if(acceleration <= 0 && !_accAngle)
+            if(acceleration <= 0 && !_accAngle && _movePWM == _destPWM)
             {
                 _accAngle = angle - startAngle;
                 _midAcc /= _numMeasures;
