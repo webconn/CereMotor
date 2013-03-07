@@ -111,7 +111,7 @@ inline void _move_stab(void)
         // Check if we need to brake
         if(moveMode == 2)
         {
-            if((_destPath - aripPath) <= _accPath || (_destPath - aripPath) <= aripPath)
+            if((_destPath - aripPath) <= _accPath || (_accPath == 0 && (_destPath - aripPath) <= aripPath))
             {
                 moveMode = 1;
                 if(!_accPath) _midAcc /= _numMeasures;
@@ -126,7 +126,7 @@ inline void _move_stab(void)
         }
         else
         {   
-            if((destAngle - angle) <= _accAngle || (destAngle - angle) <= deltaAngle )
+            if((destAngle - angle) <= _accAngle || (_accAngle == 0 && (destAngle - angle) <= deltaAngle))
             {
                 moveMode = 3;
                 if(!_accAngle) _midAcc /= _numMeasures;
