@@ -43,9 +43,6 @@ int32_t _midAcc = 0;
 uint32_t sign = 0;
 uint32_t _numMeasures = 0;
 
-float destAngle = 0, startAngle = 0, deltaAngle = 0;
-float _accAngle = 0;
-
 int32_t leftPWM, rightPWM;
 
 /**
@@ -63,8 +60,6 @@ inline void _move_stab(void)
 
     int32_t leftSpeed = encoder_getDelta(1);
     int32_t rightSpeed = encoder_getDelta(0);
-
-    float angle = getAngle();
 
     // Specially for angle stabilisation
     if(moveMode > 2)
@@ -109,8 +104,8 @@ inline void _move_stab(void)
         }
 
         // Check if we need to brake
-        if(moveMode == 2)
-        {
+        //if(moveMode == 2)
+        //{
             if((_destPath - aripPath) <= _accPath || (_accPath == 0 && (_destPath - aripPath) <= aripPath))
             {
                 moveMode = 1;
@@ -123,7 +118,7 @@ inline void _move_stab(void)
                 _accPath = aripPath;
                 _midAcc /= _numMeasures;
             }
-        }
+        /*}
         else
         {   
             if((destAngle - angle) <= _accAngle || (_accAngle == 0 && (destAngle - angle) <= deltaAngle))
@@ -136,7 +131,7 @@ inline void _move_stab(void)
             {
                 _accAngle = angle - startAngle;
             }
-        }
+        }*/
     }
     else if(moveMode == 1 || moveMode == 3)
     {
@@ -146,8 +141,8 @@ inline void _move_stab(void)
 
         
         // If we reached end, stop engines and shut algo down
-        if(moveMode == 1)
-        {
+        //if(moveMode == 1)
+        //{
             if(aripPath >= _destPath)
             {
                 moveMode = 0; // stop engines
@@ -157,7 +152,7 @@ inline void _move_stab(void)
                 _move_stay(); // stop right now, I said!
                 return;
             }
-        }
+        /*}
         else
         {
             if(angle >= destAngle)
@@ -169,7 +164,7 @@ inline void _move_stab(void)
                 _move_stay();
                 return;
             }
-        }
+        }*/
     }
 
     // Stabilisation by encoders path
@@ -240,11 +235,7 @@ void move_rotate(uint32_t pwm, uint32_t acceleration, float dAngle)
     encoder_reset(1);
 
     // 1. Set data
-    deltaAngle = dAngle;
-    startAngle = getAngle();
-    destAngle = deltaAngle + startAngle;
-    deltaAngle /= 2; // divide for path comparator - oops...
-
+    _destPath = getChassisRadius() * dAngle;
     _destPWM = pwm;
     _moveAcc = acceleration;
 
