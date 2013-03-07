@@ -55,13 +55,13 @@ inline void _move_stab(void)
     // Stabilisation algo depends on user selection - defined
 
     // 1. Get paths by both encoders
-    int32_t leftPath = encoder_getPath(0);
-    int32_t rightPath = encoder_getPath(1);
+    int32_t leftPath = encoder_getPath(1);
+    int32_t rightPath = encoder_getPath(0);
 
     int32_t aripPath = (leftPath + rightPath) / 2; // sum and divide by 2
 
-    int32_t leftSpeed = encoder_getDelta(0);
-    int32_t rightSpeed = encoder_getDelta(1);
+    int32_t leftSpeed = encoder_getDelta(1);
+    int32_t rightSpeed = encoder_getDelta(0);
 
     float angle = getAngle();
 
