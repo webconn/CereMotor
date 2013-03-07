@@ -254,6 +254,11 @@ void move_stop(void)
 
 }
 
+int32_t move_getMidAcc(void)
+{
+    return _midAcc;
+}
+
 /**
  * Moving pause
  */
