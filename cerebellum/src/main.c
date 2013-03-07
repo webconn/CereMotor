@@ -104,18 +104,19 @@ int main(void)
         while(encoder_getDelta(0) > 0);
 
         // 4. Measure brakepath
-        int32_t brakePath = ((encoder_getPath(0) + encoder_getPath(1)) / 2) - move_getBrakePath();
+        int32_t brakePath = encoder_getPath(0) - move_getBrakePath();
 
         // 5. Check brakepath for minimal luft
         if(brakePath <= mmToTicks(3))
         {
-            printf("MBL=%02d, SUCCESS!\n\r", (int) minBrake);
+            printf("MBL=%02d, SUCCESS! (BP=%06d, MBP=%06d)\n\r", (int) minBrake, (int) brakePath, (int) move_getBrakePath());
         }
         else
         {
-            printf("MBL=%02d\n\r", (int) minBrake);
+            printf("MBL=%02d, FAIL!    (BP=%06d, MBP=%06d)\n\r", (int) minBrake, (int) brakePath, (int) move_getBrakePath());
         }
 
+        minBrake--;
     }
 
 
