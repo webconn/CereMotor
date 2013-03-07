@@ -15,12 +15,257 @@ menu "Robot modules"
     config USE_COORDS
         bool "Coords computer"
         default "n"
+
+    config USE_MOVEMENT
+        depends on USE_COORDS 
+        depends on USE_ENCODERS 
+        depends on USE_CHASSIS
+        depends on USE_PID
+        bool "Movement stabilisation"
+        default "n"
+
+    config USE_UART
+        bool "UART interfaces"
+        default "n"
         
 endmenu
 
 config UART_STDOUT
+    depends on USE_UART
     int "Default stdout UART"
     default 1
+
+if USE_UART
+
+    menu "UART configuration"
+
+        menu "Use interfaces"
+            
+            config USE_UART1
+            bool "USART1"
+
+            config USE_UART2
+            bool "USART2"
+
+            config USE_UART3
+            bool "USART3"
+
+            config USE_UART4
+            bool "UART4"
+
+            config USE_UART5
+            bool "UART5"
+
+        endmenu
+
+        choice
+            prompt "Default STDIO UART"
+
+            config STDIO_UART1
+            depends on USE_UART1
+            bool "USART1"
+
+            config STDIO_UART2
+            depends on USE_UART2
+            bool "USART2"
+
+            config STDIO_UART3
+            depends on USE_UART3
+            bool "USART3"
+
+            config STDIO_UART4
+            depends on USE_UART4
+            bool "UART4"
+
+            config STDIO_UART5
+            depends on USE_UART5
+            bool "UART5"
+
+        endchoice
+
+        if USE_UART1
+        menu "USART1 configuration"
+        
+            config UART1_BAUDRATE
+            int "Baudrate"
+            default 9600
+
+            config UART1_BITS
+            int "Number of bits"
+            default 8
+
+            config UART1_RX
+            bool "Enable receiver"
+            default "y"
+
+            config UART1_TX
+            bool "Enable transmitter"
+            default "y"
+
+            choice
+                prompt "Parity check"
+
+                config UART1_PARITY_NONE
+                bool "None"
+
+                config UART1_PARITY_ODD
+                bool "Odd"
+
+                config UART1_PARITY_EVEN
+                bool "Even"
+
+            endchoice
+
+        endmenu
+        endif
+
+        if USE_UART2
+        menu "USART2 configuration"
+        
+            config UART2_BAUDRATE
+            int "Baudrate"
+            default 9600
+
+            config UART2_BITS
+            int "Number of bits"
+            default 8
+
+            config UART2_RX
+            bool "Enable receiver"
+            default "y"
+
+            config UART2_TX
+            bool "Enable transmitter"
+            default "y"
+
+            choice
+                prompt "Parity check"
+
+                config UART2_PARITY_NONE
+                bool "None"
+
+                config UART2_PARITY_ODD
+                bool "Odd"
+
+                config UART2_PARITY_EVEN
+                bool "Even"
+
+            endchoice
+
+        endmenu
+        endif
+
+        if USE_UART3
+        menu "USART3 configuration"
+        
+            config UART3_BAUDRATE
+            int "Baudrate"
+            default 9600
+
+            config UART3_BITS
+            int "Number of bits"
+            default 8
+
+            config UART3_RX
+            bool "Enable receiver"
+            default "y"
+
+            config UART3_TX
+            bool "Enable transmitter"
+            default "y"
+
+            choice
+                prompt "Parity check"
+
+                config UART3_PARITY_NONE
+                bool "None"
+
+                config UART3_PARITY_ODD
+                bool "Odd"
+
+                config UART3_PARITY_EVEN
+                bool "Even"
+
+            endchoice
+
+        endmenu
+        endif
+
+        if USE_UART4
+        menu "UART4 configuration"
+        
+            config UART4_BAUDRATE
+            int "Baudrate"
+            default 9600
+
+            config UART4_BITS
+            int "Number of bits"
+            default 8
+
+            config UART4_RX
+            bool "Enable receiver"
+            default "y"
+
+            config UART4_TX
+            bool "Enable transmitter"
+            default "y"
+
+            choice
+                prompt "Parity check"
+
+                config UART4_PARITY_NONE
+                bool "None"
+
+                config UART4_PARITY_ODD
+                bool "Odd"
+
+                config UART4_PARITY_EVEN
+                bool "Even"
+
+            endchoice
+
+        endmenu
+        endif
+
+        if USE_UART5
+        menu "UART5 configuration"
+        
+            config UART5_BAUDRATE
+            int "Baudrate"
+            default 9600
+
+            config UART5_BITS
+            int "Number of bits"
+            default 8
+
+            config UART5_RX
+            bool "Enable receiver"
+            default "y"
+
+            config UART5_TX
+            bool "Enable transmitter"
+            default "y"
+
+            choice
+                prompt "Parity check"
+
+                config UART5_PARITY_NONE
+                bool "None"
+
+                config UART5_PARITY_ODD
+                bool "Odd"
+
+                config UART5_PARITY_EVEN
+                bool "Even"
+
+            endchoice
+
+        endmenu
+        endif
+
+    endmenu
+
+endif
 
 choice
     prompt "Robot config set"
