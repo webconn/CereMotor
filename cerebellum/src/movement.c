@@ -142,7 +142,7 @@ inline void _move_stab(void)
     {
         // At this stage we need to control encoders speed
         if(leftSpeed > 5 && rightSpeed > 5 && acceleration >= -_midAcc) // speed down while we should move
-            _movePWM -= _moveAcc;
+            _movePWM -= _moveAcc + _moveAcc;
 
         
         // If we reached end, stop engines and shut algo down
