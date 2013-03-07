@@ -187,11 +187,11 @@ inline void _move_stab(void)
     {
         if(sign)
         {
-            chassis_write(-leftPWM, rightPWM);
+            chassis_write(leftPWM, -rightPWM);
         }
         else
         {
-            chassis_write(leftPWM, -rightPWM);
+            chassis_write(-leftPWM, rightPWM);
         }
     }
 }
