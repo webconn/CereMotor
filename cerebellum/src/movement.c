@@ -82,23 +82,23 @@ inline void _move_stab(void)
     }
 
     int32_t acceleration = ((leftSpeed + rightSpeed) / 2) - lastSpeed;
-    
-    if(!_midAcc)
-    {
-        _midAcc = acceleration;
-        _numMeasures = 1;
-    }
-    else if(!_accPath && !_accAngle)
-    {
-        _midAcc += acceleration;
-        _numMeasures++;
-    }
 
     lastSpeed = (leftSpeed + rightSpeed) / 2;
 
     // Speed edjes: when starting and when stopping
     if(moveMode == 2 || moveMode == 4) // normal operation (no brakes)
     {
+        if(!_midAcc)
+        {
+            _midAcc = acceleration;
+            _numMeasures = 1;
+        }
+        else if(!_accPath && !_accAngle)
+        {
+            _midAcc += acceleration;
+            _numMeasures++;
+        }
+
         if(_movePWM < _destPWM) // acceleration
         {
             _movePWM += _moveAcc;
