@@ -176,7 +176,7 @@ inline void _move_stab(void)
     int32_t error = pid_calculateLinError(rightPath, leftPath);
 
     // 3. Updating PID data (PWM overload calculated in this function)
-    pid_update(error, _movePWM, &leftPWM, &rightPWM);
+    pid_update(error, _movePWM, &rightPWM, &leftPWM);
 
     // 4. Write data to chassis
     if(moveMode < 3) // for linear moving
