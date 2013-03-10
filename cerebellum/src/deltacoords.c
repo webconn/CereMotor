@@ -1,5 +1,6 @@
 #include <cerebellum/deltacoords.h>
 #include <cerebellum/robot.h>
+#include <robots/config.h>
 
 struct _coords{
     float angle; // in radians
@@ -62,6 +63,9 @@ void updateCoords(int32_t speed1, int32_t speed2)
     // Stage 2. Get delta angle
     float deltaAngle = getDeltaAngle(speed1, speed2);
     
+    #ifdef CONFIG_ANGLE_COEFF
+    deltaAngle *= CONFIG_ANGLE_COEFF; // for angle correction 
+    #endif
 
     // Stage 3. Sum deltaAngle with old data of angle
     _current_coords.angle += deltaAngle;
@@ -72,8 +76,6 @@ void updateCoords(int32_t speed1, int32_t speed2)
     // sin() or cos(), and use the fastest one.
     // Another side of the triangle should be found
     // using Pythagorean theorem (emm..)
-    //
-    // TODO: Fix my brain about signs in deltas
     
     int32_t deltaX = (int32_t) ((float) centralSpeed * cos(_current_coords.angle));
     int32_t deltaY = (int32_t) ((float) centralSpeed * sin(_current_coords.angle));

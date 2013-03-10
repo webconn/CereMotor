@@ -14,6 +14,9 @@
 #include <stdio.h>
 #include <math.h>
 
+#define LEFT 1
+#define RIGHT 0
+
 volatile uint32_t _delay = 0;
 
 void SysTick_Handler(void)
@@ -65,7 +68,7 @@ int main(void)
     encoders_init();
     led_init();
     uart_init(3, 9600);
-    uart_init(1, 57600);
+    uart_init(1, 115200);
 
     SysTick_Config(SystemCoreClock / 100); // 10 ms timer period
 
@@ -88,9 +91,15 @@ int main(void)
     AFIO->MAPR &= ~(7 << 24);
     AFIO->MAPR |= (4 << 24);
 
+    move_setMinBrakeDelta(2);
     //move_line(6000, 5, mmToTicks(500));
-    int32_t minBrake = 40;
-    while(minBrake > 0)
+    //while(move_isBusy());
+    move_rotate(1000, 10, 3.14159);
+    while(move_isBusy());
+    //move_line(6000, 5, mmToTicks(500));
+    //while(1);;;
+    //int32_t minBrake = 40;
+    /*while(minBrake > 0)
     {    
         // 1. Set MinBrakeDelta
         move_setMinBrakeDelta(minBrake);
@@ -117,8 +126,12 @@ int main(void)
         }
 
         minBrake--;
-    }
+    }*/
 
+    while(1)
+    {
+        printf("A: %f; PATH: (%06d, %06d)\r\r", getAngle(), (int) encoder_getPath(LEFT), (int) encoder_getPath(RIGHT));
+    }
 
     while(1);;; // end of program
     
