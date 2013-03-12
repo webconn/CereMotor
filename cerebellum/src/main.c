@@ -16,6 +16,9 @@
 #include <stdio.h>
 #include <math.h>
 
+#define LEFT 1
+#define RIGHT 0
+
 volatile uint32_t _delay = 0;
 
 void SysTick_Handler(void)
@@ -124,7 +127,6 @@ int main(void)
     }
     */
     //printf("Required: %06d\n\r\n", (int) (2 * 3.14159 * getChassisRadius()));
-
     /*while(minBrake > 0)
     {    
         // 1. Set MinBrakeDelta
@@ -160,6 +162,10 @@ int main(void)
         minBrake--;
     }*/
 
+    while(1)
+    {
+        printf("A: %f; PATH: (%06d, %06d)\r\r", getAngle(), (int) encoder_getPath(LEFT), (int) encoder_getPath(RIGHT));
+    }
 
     while(1);;; // end of program
     
