@@ -74,11 +74,11 @@ int main(void)
 
     // Init push-button on PA15
     sensor_t push1 = {
-        .gpio = GPIOA,
-        .pin = (1<<15),
+        .gpio = GPIOC,
+        .pin = (1<<3),
         .mode = SENSOR_ACTIVE_GND
     };
-    sensor_init(&push1, RCC_APB2Periph_GPIOA);
+    sensor_init(&push1, RCC_APB2Periph_GPIOC);
 
     SysTick_Config(SystemCoreClock / 100); // 10 ms timer period
 

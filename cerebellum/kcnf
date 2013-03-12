@@ -27,6 +27,10 @@ menu "Robot modules"
     config USE_UART
         bool "UART interfaces"
         default "n"
+
+    config USE_SENSORS
+        bool "Basic sensors"
+        default "n"
         
 endmenu
 
