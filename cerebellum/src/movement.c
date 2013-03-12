@@ -31,7 +31,7 @@ int32_t move_getBrakePath(void)
 int moveMode = 0;
 
 inline void _move_stay(void);
-//inline void _move_stab(void);
+inline void _move_line(void);
 inline void _move_rotate(void);
 
 // Tick function - running freely in SysTick and updating configuration
@@ -39,8 +39,8 @@ void move_tick(void)
 {
     if(moveMode == 0)
         _move_stay();
-    //else if(moveMode < 3)
-       // _move_stab();
+    else if(moveMode < 3)
+        _move_line();
     else
         _move_rotate();
 }
@@ -53,22 +53,17 @@ inline void _move_stay(void)
     chassis_break(CONFIG_PWM_ACCURACY, CONFIG_PWM_ACCURACY); // PWM at maximum
 }
 
-// Line movement tick function
-
-uint16_t _movePWM, _moveAcc;
-uint16_t _destPWM;
-uint32_t _accPath = 0, _destPath;
+int32_t _movePWM, _moveAcc;
+int32_t _destPWM;
+int32_t _accPath = 0, _destPath;
 int32_t lastSpeed = 0;
 int32_t _midAcc = 0;
-uint32_t sign = 0;
-uint32_t _numMeasures = 0;
+int32_t sign = 0;
+int32_t _numMeasures = 0;
 
 int32_t leftPWM, rightPWM;
 
-/**
- * Move by line tick
- */
-/*inline void _move_stab(void)
+inline void _move_line(void)
 {
     // Stabilisation algo depends on user selection - defined
 
@@ -81,27 +76,12 @@ int32_t leftPWM, rightPWM;
     int32_t leftSpeed = encoder_getDelta(1);
     int32_t rightSpeed = encoder_getDelta(0);
 
-    // Specially for angle stabilisation
-    if(moveMode > 2)
-    {
-        if(sign)
-        {
-            rightPath = -rightPath;
-            rightSpeed = -rightSpeed;
-        }
-        else
-        {
-            leftSpeed = -leftSpeed;
-            leftPath = -leftPath;
-        }
-    }
-
     int32_t acceleration = ((leftSpeed + rightSpeed) / 2) - lastSpeed;
 
     lastSpeed = (leftSpeed + rightSpeed) / 2;
 
     // Speed edjes: when starting and when stopping
-    if(moveMode == 2 || moveMode == 4) // normal operation (no brakes)
+    if(moveMode == 2) // normal operation (no brakes)
     {
         // 1. Calculate middle acceleration
         if(!_midAcc && acceleration > 0)
@@ -124,66 +104,34 @@ int32_t leftPWM, rightPWM;
         }
 
         // Check if we need to brake
-        if(moveMode == 2)
+        if((_destPath - aripPath) <= _accPath || (_accPath == 0 && (_destPath - aripPath) <= aripPath))
         {
-            if((_destPath - aripPath) <= _accPath || (_accPath == 0 && (_destPath - aripPath) <= aripPath))
-            {
-                moveMode = 1;
-                _midAcc *= 2;
-            }
-            
-            // Check acceleration: if accelerated, take the measure
-            if(acceleration <= 0 && !_accPath && _movePWM == _destPWM)
-            {
-                _accPath = aripPath;
-                _midAcc /= _numMeasures;
-            }
+            moveMode = 1;
         }
-        else
-        {   
-            if((destAngle - angle) <= _accAngle || (_accAngle == 0 && (destAngle - angle) <= deltaAngle))
-            {
-                moveMode = 3;
-                _midAcc *= 2;
-            }
-
-            if(acceleration <= 0 && !_accAngle && _movePWM == _destPWM)
-            {
-                _accAngle = angle - startAngle;
-            }
+        
+        // Check acceleration: if accelerated, take the measure
+        if(acceleration <= 0 && !_accPath && _movePWM == _destPWM)
+        {
+            _accPath = aripPath;
+            _midAcc /= _numMeasures;
         }
     }
-    else if(moveMode == 1 || moveMode == 3)
+    else 
     {
         // At this stage we need to control encoders speed
         if(leftSpeed > 5 && rightSpeed > 5 && acceleration >= -_midAcc) // speed down while we should move
-            _movePWM -= _moveAcc + _moveAcc;
+            _movePWM -= _moveAcc;
 
         
         // If we reached end, stop engines and shut algo down
-        if(moveMode == 1)
+        if(aripPath >= _destPath)
         {
-            if(aripPath >= _destPath)
-            {
-                moveMode = 0; // stop engines
-                _movePWM = 0;
-                _accPath = 0;
-                _midAcc = 0;
-                _move_stay(); // stop right now, I said!
-                return;
-            }
-        }
-        else
-        {
-            if(angle >= destAngle)
-            {
-                moveMode = 0;
-                _movePWM = 0;
-                _accAngle = 0;
-                _midAcc = 0;
-                _move_stay();
-                return;
-            }
+            moveMode = 0; // stop engines
+            _movePWM = 0;
+            _accPath = 0;
+            _midAcc = 0;
+            _move_stay(); // stop right now, I said!
+            return;
         }
     }
 
@@ -194,25 +142,23 @@ int32_t leftPWM, rightPWM;
     pid_update(error, _movePWM, &leftPWM, &rightPWM);
 
     // 4. Write data to chassis
-    if(moveMode < 3) // for linear moving
-    {
-        chassis_write(leftPWM, rightPWM);
-    }
-    else // for rotation
-    {
-        if(sign)
-        {
-            chassis_write(leftPWM, -rightPWM);
-        }
-        else
-        {
-            chassis_write(-leftPWM, rightPWM);
-        }
-    }
-}*/
+    chassis_write(leftPWM, rightPWM);
+}
+
+/**
+ * Move by line tick
+ */
+
 
 int32_t flag_GetMinBrake = 0;
+int32_t flag_CorrectorDirSet = 0;
 int32_t MinBrakePath = 0;
+int32_t lastDelta = 0;
+int32_t numMeasures = 0;
+int32_t deltaSpeed = 0;
+int32_t rqSpeed = 0;
+float rqAngle = 0;
+int32_t _mdir = 0;
 
 inline void _move_rotate(void)
 {
@@ -229,19 +175,11 @@ inline void _move_rotate(void)
 
     // Read data
 
-    static int32_t lastDelta;
-
     int32_t leftPath = encoder_getPath(LEFT);
     int32_t rightPath = encoder_getPath(RIGHT);
 
     int32_t leftDelta = encoder_getDelta(LEFT);
     int32_t rightDelta = encoder_getDelta(RIGHT);
-
-    int32_t midDelta = (leftDelta + rightDelta) / 2;
-    int32_t midPath = (leftPath + rightPath) / 2;
-
-    int32_t acceleration = midDelta - lastDelta;
-    lastDelta = midDelta;
     
     // Change signs
     
@@ -256,17 +194,25 @@ inline void _move_rotate(void)
         rightDelta = -rightDelta;
     }
 
+    int32_t midDelta = (leftDelta + rightDelta) / 2;
+    int32_t midPath = (leftPath + rightPath) / 2;
+
+    int32_t acceleration = midDelta - lastDelta;
+    lastDelta = midDelta;
 
     // Stage 2
     // Start or continue robot to rotate
     // Check if robot still accelerating or moving
     // If it is true, check if we need to brake engines
-    if(moveMode == 4) // accelerating
+    if(moveMode == 5) // accelerating
     {
+        // 0. Engines direction set by sign var
+        _mdir = sign;
+
         // 1. Check if we are not at maximum PWM
         if(_movePWM < _destPWM) // we have a range to accelerate
         {
-            _destPWM += _moveAcc;
+            _movePWM += _moveAcc;
         }
         else
         {
@@ -278,18 +224,24 @@ inline void _move_rotate(void)
         {
             flag_GetMinBrake = 1;
             MinBrakePath = midPath;
+            numMeasures = 1;
         }
         else if(flag_GetMinBrake == 1 && acceleration <= 0 && _movePWM == _destPWM) // second stage - end of acceleration
         {
             flag_GetMinBrake = 2;
             MinBrakePath = midPath - MinBrakePath;
+            deltaSpeed = MinBrakePath / numMeasures;
         }
+
+        if(flag_GetMinBrake == 1) numMeasures++;
 
         // 3. Check if we have MinBrakePath left at the path or
         // we still accelerating but reached middle of the way
-        if(((_destPath - midPath) <= MinBrakePath) || (flag_GetMinBrake != 2 && (_destPath - midPath) <= midPath))
+        if((flag_GetMinBrake == 2 && (_destPath - midPath) <= MinBrakePath) || (flag_GetMinBrake != 2 && (_destPath - midPath) <= midPath))
         {
-            moveMode = 3;
+            moveMode = 4;
+            rqSpeed = midDelta - 2 * rqSpeed;
+            if(flag_GetMinBrake != 2) deltaSpeed = midPath / numMeasures;
         }
 
     }
@@ -297,8 +249,10 @@ inline void _move_rotate(void)
     // Stage 3. Braking subprogram
     // If it is time to brake engines, we should decrease PWM while robot is still
     // can move (in final, we should have
-    else // stopping
+    else if(moveMode == 4)// stopping
     {
+        // 0. Engines direction is still set by sign
+        _mdir = sign;
         // We have pre-defined value - minimal speed. This value means than
         // at this encoder speed robot should move and make e-brake (with 
         // brakepath near 2 mm
@@ -307,17 +261,79 @@ inline void _move_rotate(void)
         // which just change the value and check brakepath
         
         // Try to save encoder speed at defined value
-        _movePWM -= midDelta - MinBrakeDelta; // it's like P-algo to save speed
 
-        if(midPath >= _destPath) // we get destination point!
+        // Required speed is decreasing every tick
+        rqSpeed -= deltaSpeed;
+        if(rqSpeed < MinBrakeDelta) rqSpeed = MinBrakeDelta;
+        _movePWM = _movePWM - 2 * (midDelta - rqSpeed); // it's like P-algo to save speed
+
+        float angleError = rqAngle - getAngle(); // if we have overrun, error will be greater than 0
+
+        if((sign == 1 && angleError <= 0) || (sign == 0 && angleError >= 0)) // we get destination point!
         {
-            moveMode = 0; // stop engines
+            moveMode = 3; // launch correcter
+            BrakeStart = midPath;
             _movePWM = 0;
+            _move_stay(); // stop right now, I said!
             midPath = 0;
             flag_GetMinBrake = 0;
-            _move_stay(); // stop right now, I said!
-            MinBrakePath = midPath;
             return;
+        }
+    }
+
+    else // moveMode == 3 - correcting angle 
+    {
+        rqSpeed = 1; // absolute minimal speed
+        _movePWM = _movePWM - 2 * (midDelta - rqSpeed);
+
+        // Get error in position
+        float angleError = rqAngle - getAngle(); // if we have overrun, error will be greater than 0
+        
+        // Set direction of the engines if required
+        if(!flag_CorrectorDirSet)
+        {
+            // Get error sign
+            if(angleError > 0) _mdir = 1; // 1 is greater sign
+            else _mdir = 0;
+
+            // Compare it with main sign, set direction and flag for not to
+            // Robot need to rotate CCW (_mdir = 1), if it rotated CCW before, but didn't reached target angle
+            // (sign == 1, err == 0), or it rotated CW and did an overrun (sign == 0, err == 1)
+            // In another situations it need to rotate CW (_mdir = 0)
+            
+            // Set flag for not to recalculate this value
+            flag_CorrectorDirSet = 1;
+        }
+
+        if(_mdir == 1) // moving CCW
+        {
+            // At CCW rotation, we check for equivalence or overrun
+            //
+            // Also, it should be better to redo correction if overrun
+            // is so large (in TODO)
+            if(angleError <= 0)
+            {
+                _movePWM = 0;
+                _move_stay();
+                midPath = 0;
+                moveMode = 0;
+                flag_CorrectorDirSet = 0;
+                _mdir = 0;
+                return;
+            }
+        }
+        else // moving CW
+        {
+            if(angleError >= 0)
+            {
+                _movePWM = 0;
+                _move_stay();
+                midPath = 0;
+                moveMode = 0;
+                flag_CorrectorDirSet = 0;
+                _mdir = 0;
+                return;
+            }
         }
     }
 
@@ -332,11 +348,11 @@ inline void _move_rotate(void)
     // Last stage
     // PID algo thinks than robot is moving forward by both wheels, so
     // we need to change PWM values signs to make robot chassis rotating
-    if(sign == 1) // CCW (left turns backward)
+    if(_mdir == 1) // CCW (left turns backward)
     {
         leftPWM = -leftPWM;
     }
-    else
+    else // CW (right turns backward)
     {
         rightPWM = -rightPWM;
     }
@@ -388,15 +404,18 @@ void move_rotate(uint32_t pwm, uint32_t acceleration, float dAngle)
     encoder_reset(1);
 
     // 1. Set data
-    _destPath = getChassisRadius() * dAngle;
+    _destPath = (int32_t) (getChassisRadius() * dAngle);
+    if(_destPath < 0) _destPath = -_destPath;
     _destPWM = pwm;
     _moveAcc = acceleration;
 
     if(dAngle > 0) sign = 1;
     else sign = 0;
+
+    rqAngle = getAngle() + dAngle;
     
     // 2. Run algo in background
-    moveMode = 4;
+    moveMode = 5;
 }
 
 /**
