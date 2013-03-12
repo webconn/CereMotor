@@ -9,6 +9,31 @@
 */
 
 /**
+ * @addgroup LEDs configuraion
+ * @{
+ */
+
+// LED1 config
+#define CONFIG_LED1_RCC RCC_APB2Periph_GPIOA
+#define CONFIG_LED1_GPIO GPIOA
+#define CONFIG_LED1_PIN 5
+
+// LED2 config
+#define CONFIG_LED2_RCC RCC_APB2Periph_GPIOC
+#define CONFIG_LED2_GPIO GPIOC
+#define CONFIG_LED2_PIN 15
+
+// LED3 config
+#define CONFIG_LED3_RCC RCC_APB2Periph_GPIOC
+#define CONFIG_LED3_GPIO GPIOC
+#define CONFIG_LED3_PIN 10
+
+/**
+ * @}
+ */
+
+
+/**
 * @addgroup Chassis configuration
 * @{
 */
@@ -90,9 +115,11 @@
 */
 
 #define CONFIG_CHASSIS_RADIUS 93
-
 #define CONFIG_STAB_ALGO_PATH
 // CONFIG_STAB_ALGO_ANGLE is not set
+
+#define CONFIG_ANGLE_COEFF 1.017603
+#define CONFIG_PATH_RCOEFF 0.980334
 
 /**
 * @}
