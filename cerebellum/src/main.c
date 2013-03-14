@@ -8,6 +8,8 @@
 #include <cerebellum/movement.h>
 #include <cerebellum/sensors.h>
 
+#include <pb/servo.h>
+
 #include <stm32f10x.h>
 #include <stm32f10x_usart.h>
 #include <stm32f10x_gpio.h>
@@ -70,13 +72,13 @@ int main(void)
     encoders_init();
     led_init();
     uart_init(3, 9600);
-    uart_init(1, 115200);
+    uart_init(1, 57600);
 
     // Init push-button on PA15
     sensor_t push1 = {
-        .gpio = GPIOC,
-        .pin = (1<<3),
-        .mode = SENSOR_ACTIVE_GND
+        .gpio = GPIOA,
+        .pin = (1<<15),
+        .mode = SENSOR_PASSIVE_GND
     };
     sensor_init(&push1, RCC_APB2Periph_GPIOC);
 
@@ -104,7 +106,7 @@ int main(void)
     AFIO->MAPR |= (4 << 24);
 
     // In infinite-loop - read the sensor
-    while(1)
+    /*while(1)
     {
         if(sensor_read(&push1))
         {
@@ -114,6 +116,23 @@ int main(void)
         {
             led_off(2);
         }
+    }*/
+
+    // In infinite loop - rotate servo 1 and 2
+    while(1)
+    {
+        int i;
+        for(i=5; i<=235; i+=5)
+        {
+            servo_write(1, i);
+            delay(20);
+        }
+        for(i=230; i>=5; i-=5)
+        {
+            servo_write(1, i);
+            delay(20);
+        }
+
     }
 
     //int i;

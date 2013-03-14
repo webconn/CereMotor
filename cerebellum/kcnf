@@ -31,8 +31,38 @@ menu "Robot modules"
     config USE_SENSORS
         bool "Basic sensors"
         default "n"
+
+    config USE_PERIPHBOARD
+        bool "PeriphBoard communication"
+        default "n"
+
+    config USE_PERIPH_SERVOS
+        depends on USE_PERIPHBOARD
+        bool "Servo library"
+        default "n"
         
 endmenu
+
+if USE_PERIPHBOARD
+
+    menu "PeriphBoard libraries"
+
+        config PB_UART
+        depends on USE_PERIPHBOARD
+        int "UART interface to communicate"
+        default 1
+
+        if USE_PERIPH_SERVOS
+
+            menu "Servo"
+
+            endmenu
+
+        endif
+
+    endmenu
+
+endif
 
 config UART_STDOUT
     depends on USE_UART
