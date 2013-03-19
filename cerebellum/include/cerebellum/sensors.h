@@ -4,6 +4,7 @@
 #include <stm32f10x.h>
 #include <stm32f10x_gpio.h>
 #include <stm32f10x_rcc.h>
+#include <cerebellum/snippet.h>
 
 /**
  * Sensor operating modes
@@ -20,7 +21,7 @@ typedef struct {
     uint32_t mode;
 } sensor_t;
 
-void sensor_init(sensor_t * sensor, uint32_t rcc);
+void sensor_init(sensor_t * sensor);
 void sensor_addInterrupt(sensor_t * sensor);
 uint32_t sensor_read(sensor_t * sensor);
 

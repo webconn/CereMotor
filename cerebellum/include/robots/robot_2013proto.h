@@ -110,6 +110,23 @@
 */
 
 /**
+ * @addgroup Servo controller
+ * @{
+ */
+
+#define CONFIG_SERVO_TIMER TIM5
+#define CONFIG_SERVO_TIMNO 5
+#define CONFIG_SERVO_TIMER_COMPARE 1
+#define CONFIG_MAX_SERVO 16
+#define CONFIG_SERVO_MIN_VALUE 0
+#define CONFIG_SERVO_MAX_VALUE 2047
+#define CONFIG_SERVO_SAFE_MIN 2047
+
+/**
+ * @}
+ */
+
+/**
 * @addgroup Stabilisation config
 * @{
 */

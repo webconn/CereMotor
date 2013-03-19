@@ -1,11 +1,9 @@
 #include <cerebellum/sensors.h>
-#include <stm32f10x.h>
-#include <stm32f10x_gpio.h>
 
-void sensor_init(sensor_t * sensor, uint32_t rcc)
+void sensor_init(sensor_t * sensor)
 {
     // 0. Init RCC
-    RCC_APB2PeriphClockCmd(rcc, ENABLE);
+    _snippet_runGPIORCC(sensor->gpio);
 
     GPIO_InitTypeDef pin_GPIO;
 

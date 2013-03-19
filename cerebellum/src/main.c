@@ -7,8 +7,7 @@
 #include <cerebellum/robot.h>
 #include <cerebellum/movement.h>
 #include <cerebellum/sensors.h>
-
-#include <pb/servo.h>
+#include <cerebellum/servo.h>
 
 #include <stm32f10x.h>
 #include <stm32f10x_usart.h>
@@ -73,6 +72,9 @@ int main(void)
     led_init();
     uart_init(3, 9600);
     uart_init(1, 57600);
+    servo_init();
+
+    __enable_irq();
 
     // Init push-button on PA15
     sensor_t push1 = {
@@ -80,7 +82,7 @@ int main(void)
         .pin = (1<<15),
         .mode = SENSOR_PASSIVE_GND
     };
-    sensor_init(&push1, RCC_APB2Periph_GPIOC);
+    sensor_init(&push1);
 
     SysTick_Config(SystemCoreClock / 100); // 10 ms timer period
 
@@ -105,32 +107,21 @@ int main(void)
     AFIO->MAPR &= ~(7 << 24);
     AFIO->MAPR |= (4 << 24);
 
-    // In infinite-loop - read the sensor
-    /*while(1)
-    {
-        if(sensor_read(&push1))
-        {
-            led_on(2);
-        }
-        else
-        {
-            led_off(2);
-        }
-    }*/
+    servo first = servo_add(GPIOB, 8);
 
     // In infinite loop - rotate servo 1 and 2
     while(1)
     {
         int i;
-        for(i=5; i<=235; i+=5)
+        for(i=2; i<=2040; i+=2)
         {
-            servo_write(1, i);
-            delay(20);
+            servo_write(first, i);
+            delay(10);
         }
-        for(i=230; i>=5; i-=5)
+        for(i=2040; i>=2; i-=2)
         {
-            servo_write(1, i);
-            delay(20);
+            servo_write(first, i);
+            delay(10);
         }
 
     }
