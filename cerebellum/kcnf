@@ -32,6 +32,10 @@ menu "Robot modules"
         bool "Basic sensors"
         default "n"
 
+    config USE_SERVO
+        bool "Servo motors"
+        default "n"
+
     config USE_PERIPHBOARD
         bool "PeriphBoard communication"
         default "n"
