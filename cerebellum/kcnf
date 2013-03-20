@@ -29,7 +29,7 @@ menu "Robot modules"
         default "n"
 
     config USE_SENSORS
-        bool "Basic sensors"
+        bool "Sensors"
         default "n"
 
     config USE_SERVO
@@ -522,6 +522,55 @@ menu "Manual robot configuration"
 
     endmenu # Stabilisation config
     endif # Stabilisation config
+
+    if USE_SERVO
+    menu "Servo configuration"
+
+        choice
+            prompt "Servo timer"
+
+            config SERVO_USE_TIM1
+            bool "TIM1"
+
+            config SERVO_USE_TIM2
+            bool "TIM2"
+
+            config SERVO_USE_TIM3
+            bool "TIM3"
+
+            config SERVO_USE_TIM4
+            bool "TIM4"
+
+            config SERVO_USE_TIM5
+            bool "TIM5"
+
+            config SERVO_USE_TIM8
+            bool "TIM8"
+
+        endchoice # Servo timer
+
+        config SERVO_TIMER_COMPARE
+            int "Compare channel number"
+            default 1
+
+        config MAX_SERVO
+            int "Max servo number"
+            default 16
+
+        config SERVO_MIN_VALUE
+            int "Minimal pulse value"
+            default 0
+
+        config SERVO_MAX_VALUE
+            int "Maximal pulse value"
+            default 2047
+
+        config SERVO_SAFE_MIN
+            int "Forced minimal pulse"
+            default 2047
+
+    endmenu # Sensors config
+    endif # Sensors config
 
 endmenu # Manual robot configuration
 

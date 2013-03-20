@@ -8,6 +8,7 @@
 #include <stm32f10x_adc.h>
 #include <misc.h>
 #include <cerebellum/snippet.h>
+#include <robots/config.h>
 
 /**
  * Sensor operating modes

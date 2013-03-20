@@ -27,22 +27,24 @@ inline void _servo_switch(void);
 inline void _servo_prepare(void);
 
 // Prepare defined values
-#if CONFIG_SERVO_TIMNO == 1
+#if defined(CONFIG_SERVO_USE_TIM1)
+#define SERVO_TIMER TIM1
 #define SERVO_TIMER_IRQn TIM1_UP_IRQn
 #define SERVO_TIMER_CC_IRQn TIM1_CC_IRQn
-#elif CONFIG_SERVO_TIMNO == 2
+#elif defined(CONFIG_SERVO_USE_TIM2)
+#define SERVO_TIMER TIM2
 #define SERVO_TIMER_IRQn TIM2_IRQn
-#elif CONFIG_SERVO_TIMNO == 3
+#elif defined(CONFIG_SERVO_USE_TIM3)
+#define SERVO_TIMER TIM3
 #define SERVO_TIMER_IRQn TIM3_IRQn
-#elif CONFIG_SERVO_TIMNO == 4
+#elif defined(CONFIG_SERVO_USE_TIM4)
+#define SERVO_TIMER TIM4
 #define SERVO_TIMER_IRQn TIM4_IRQn
-#elif CONFIG_SERVO_TIMNO == 5
+#elif defined(CONFIG_SERVO_USE_TIM5)
+#define SERVO_TIMER TIM5
 #define SERVO_TIMER_IRQn TIM5_IRQn
-#elif CONFIG_SERVO_TIMNO == 6
-#define SERVO_TIMER_IRQn TIM6_IRQn
-#elif CONFIG_SERVO_TIMNO == 7
-#define SERVO_TIMER_IRQn TIM7_IRQn
-#elif CONFIG_SERVO_TIMNO == 8
+#elif defined(CONFIG_SERVO_USE_TIM8)
+#define SERVO_TIMER TIM8
 #define SERVO_TIMER_IRQn TIM8_UP_IRQn
 #define SERVO_TIMER_CC_IRQn TIM8_CC_IRQn
 #endif
@@ -64,7 +66,7 @@ void servo_init(void)
     // timer and timer interrupt
     
     // 0. Init RCC
-    _snippet_runTIMRCC(CONFIG_SERVO_TIMER);
+    _snippet_runTIMRCC(SERVO_TIMER);
     
     // 1. Init timer
     TIM_TimeBaseInitTypeDef timer = {
@@ -73,7 +75,7 @@ void servo_init(void)
         .TIM_Period = 2047,
         .TIM_ClockDivision = TIM_CKD_DIV1
     };
-    TIM_TimeBaseInit(CONFIG_SERVO_TIMER, &timer);
+    TIM_TimeBaseInit(SERVO_TIMER, &timer);
 
     // Configure output compare
     TIM_OCInitTypeDef compare = {
@@ -83,22 +85,22 @@ void servo_init(void)
 
     // Set compare
     #if CONFIG_SERVO_TIMER_COMPARE == 1
-    TIM_OC1Init(CONFIG_SERVO_TIMER, &compare);
-    TIM_ITConfig(CONFIG_SERVO_TIMER, TIM_IT_CC1, ENABLE);
+    TIM_OC1Init(SERVO_TIMER, &compare);
+    TIM_ITConfig(SERVO_TIMER, TIM_IT_CC1, ENABLE);
     #elif CONFIG_SERVO_TIMER_COMPARE == 2
-    TIM_OC2Init(CONFIG_SERVO_TIMER, &compare);
-    TIM_ITConfig(CONFIG_SERVO_TIMER, TIM_IT_CC2, ENABLE);
+    TIM_OC2Init(SERVO_TIMER, &compare);
+    TIM_ITConfig(SERVO_TIMER, TIM_IT_CC2, ENABLE);
     #elif CONFIG_SERVO_TIMER_COMPARE == 3
-    TIM_OC3Init(CONFIG_SERVO_TIMER, &compare);
-    TIM_ITConfig(CONFIG_SERVO_TIMER, TIM_IT_CC3, ENABLE);
+    TIM_OC3Init(SERVO_TIMER, &compare);
+    TIM_ITConfig(SERVO_TIMER, TIM_IT_CC3, ENABLE);
     #elif CONFIG_SERVO_TIMER_COMPARE == 4
-    TIM_OC4Init(CONFIG_SERVO_TIMER, &compare);
-    TIM_ITConfig(CONFIG_SERVO_TIMER, TIM_IT_CC4, ENABLE);
+    TIM_OC4Init(SERVO_TIMER, &compare);
+    TIM_ITConfig(SERVO_TIMER, TIM_IT_CC4, ENABLE);
     #endif
 
 
     // Enable interrupts
-    TIM_ITConfig(CONFIG_SERVO_TIMER, TIM_IT_Update, ENABLE);
+    TIM_ITConfig(SERVO_TIMER, TIM_IT_Update, ENABLE);
 
     // Condfigure interrupt in NVIC
     NVIC_InitTypeDef interrupt = {
@@ -116,7 +118,7 @@ void servo_init(void)
 
     // That's so.
     // Enable timers
-    TIM_Cmd(CONFIG_SERVO_TIMER, ENABLE);
+    TIM_Cmd(SERVO_TIMER, ENABLE);
 }
 
 servo servo_add(GPIO_TypeDef * gpio, uint8_t pin)
@@ -151,7 +153,7 @@ servo servo_add(GPIO_TypeDef * gpio, uint8_t pin)
     num_add++;
     
     if(new_pos == 0)
-        TIM_Cmd(CONFIG_SERVO_TIMER, ENABLE);
+        TIM_Cmd(SERVO_TIMER, ENABLE);
     
     // 4. Return servo ID
     return (servo) new_pos;
@@ -226,17 +228,17 @@ inline void _servo_setActive(void)
     // Configure timer
     // Prescaler = 120 (if f=72 MHz)
     // Prescaler = 60 (if f=36 MHz)
-    TIM_PrescalerConfig(CONFIG_SERVO_TIMER, 120, TIM_PSCReloadMode_Immediate);
+    TIM_PrescalerConfig(SERVO_TIMER, 120, TIM_PSCReloadMode_Immediate);
 
     // Set 1st output compare and pointer to compare
     #if CONFIG_SERVO_TIMER_COMPARE == 1
-    TIM_SetCompare1(CONFIG_SERVO_TIMER, p_servo_queue[0]->value);
+    TIM_SetCompare1(SERVO_TIMER, p_servo_queue[0]->value);
     #elif CONFIG_SERVO_TIMER_COMPARE == 2
-    TIM_SetCompare2(CONFIG_SERVO_TIMER, p_servo_queue[0]->value);
+    TIM_SetCompare2(SERVO_TIMER, p_servo_queue[0]->value);
     #elif CONFIG_SERVO_TIMER_COMPARE == 3
-    TIM_SetCompare3(CONFIG_SERVO_TIMER, p_servo_queue[0]->value);
+    TIM_SetCompare3(SERVO_TIMER, p_servo_queue[0]->value);
     #elif CONFIG_SERVO_TIMER_COMPARE == 4
-    TIM_SetCompare4(CONFIG_SERVO_TIMER, p_servo_queue[0]->value);
+    TIM_SetCompare4(SERVO_TIMER, p_servo_queue[0]->value);
     #endif
     curItem = 0;
 }
@@ -253,21 +255,21 @@ inline void _servo_setPassive(void)
     // Prescaler = 468 (if f = 36 MHz)
     // Value to turn all servo on = 977
     // It means minimal pulse 0.6 ms
-    TIM_PrescalerConfig(CONFIG_SERVO_TIMER, 120, TIM_PSCReloadMode_Immediate);
-    TIM_SetCounter(CONFIG_SERVO_TIMER, 0); // clear timer if any
+    TIM_PrescalerConfig(SERVO_TIMER, 120, TIM_PSCReloadMode_Immediate);
+    TIM_SetCounter(SERVO_TIMER, 0); // clear timer if any
 
     #if CONFIG_SERVO_TIMER_COMPARE == 1
-    TIM_ITConfig(CONFIG_SERVO_TIMER, TIM_IT_CC1, ENABLE);
-    TIM_SetCompare1(CONFIG_SERVO_TIMER, 2047);
+    TIM_ITConfig(SERVO_TIMER, TIM_IT_CC1, ENABLE);
+    TIM_SetCompare1(SERVO_TIMER, 2047);
     #elif CONFIG_SERVO_TIMER_COMPARE == 2
-    TIM_ITConfig(CONFIG_SERVO_TIMER, TIM_IT_CC2, ENABLE);
-    TIM_SetCompare2(CONFIG_SERVO_TIMER, 2047);
+    TIM_ITConfig(SERVO_TIMER, TIM_IT_CC2, ENABLE);
+    TIM_SetCompare2(SERVO_TIMER, 2047);
     #elif CONFIG_SERVO_TIMER_COMPARE == 3
-    TIM_ITConfig(CONFIG_SERVO_TIMER, TIM_IT_CC3, ENABLE);
-    TIM_SetCompare3(CONFIG_SERVO_TIMER, 2047);
+    TIM_ITConfig(SERVO_TIMER, TIM_IT_CC3, ENABLE);
+    TIM_SetCompare3(SERVO_TIMER, 2047);
     #elif CONFIG_SERVO_TIMER_COMPARE == 4
-    TIM_ITConfig(CONFIG_SERVO_TIMER, TIM_IT_CC4, ENABLE);
-    TIM_SetCompare4(CONFIG_SERVO_TIMER, 2047);
+    TIM_ITConfig(SERVO_TIMER, TIM_IT_CC4, ENABLE);
+    TIM_SetCompare4(SERVO_TIMER, 2047);
     #endif
 }
 
@@ -276,7 +278,7 @@ inline void _servo_setPassive(void)
  */
 inline void _servo_switch(void)
 {
-    uint16_t timerValue = TIM_GetCounter(CONFIG_SERVO_TIMER);
+    uint16_t timerValue = TIM_GetCounter(SERVO_TIMER);
     // Turn off all current servos
     do
     {
@@ -290,23 +292,23 @@ inline void _servo_switch(void)
     // Set compare value to next servo
     if(curItem == servo_queue_len)
         #if CONFIG_SERVO_TIMER_COMPARE == 1
-        TIM_ITConfig(CONFIG_SERVO_TIMER, TIM_IT_CC1, DISABLE);
+        TIM_ITConfig(SERVO_TIMER, TIM_IT_CC1, DISABLE);
         #elif CONFIG_SERVO_TIMER_COMPARE == 2
-        TIM_ITConfig(CONFIG_SERVO_TIMER, TIM_IT_CC2, DISABLE);
+        TIM_ITConfig(SERVO_TIMER, TIM_IT_CC2, DISABLE);
         #elif CONFIG_SERVO_TIMER_COMPARE == 3
-        TIM_ITConfig(CONFIG_SERVO_TIMER, TIM_IT_CC3, DISABLE);
+        TIM_ITConfig(SERVO_TIMER, TIM_IT_CC3, DISABLE);
         #elif CONFIG_SERVO_TIMER_COMPARE == 4
-        TIM_ITConfig(CONFIG_SERVO_TIMER, TIM_IT_CC4, DISABLE);
+        TIM_ITConfig(SERVO_TIMER, TIM_IT_CC4, DISABLE);
         #endif
     else
         #if CONFIG_SERVO_TIMER_COMPARE == 1
-        TIM_SetCompare1(CONFIG_SERVO_TIMER, p_servo_queue[curItem]->value);
+        TIM_SetCompare1(SERVO_TIMER, p_servo_queue[curItem]->value);
         #elif CONFIG_SERVO_TIMER_COMPARE == 2
-        TIM_SetCompare2(CONFIG_SERVO_TIMER, p_servo_queue[curItem]->value);
+        TIM_SetCompare2(SERVO_TIMER, p_servo_queue[curItem]->value);
         #elif CONFIG_SERVO_TIMER_COMPARE == 3
-        TIM_SetCompare3(CONFIG_SERVO_TIMER, p_servo_queue[curItem]->value);
+        TIM_SetCompare3(SERVO_TIMER, p_servo_queue[curItem]->value);
         #elif CONFIG_SERVO_TIMER_COMPARE == 4
-        TIM_SetCompare4(CONFIG_SERVO_TIMER, p_servo_queue[curItem]->value);
+        TIM_SetCompare4(SERVO_TIMER, p_servo_queue[curItem]->value);
         #endif
 }
 
@@ -359,44 +361,40 @@ inline void _servo_timerCompare(void)
  * Interrupt vector
  */
 
-#if CONFIG_SERVO_TIMNO == 1
+#if defined(CONFIG_SERVO_USE_TIM1)
 void TIM1_CC_IRQHandler(void)
-#elif CONFIG_SERVO_TIMNO == 2
+#elif defined(CONFIG_SERVO_USE_TIM2)
 void TIM2_IRQHandler(void)
-#elif CONFIG_SERVO_TIMNO == 3
+#elif defined(CONFIG_SERVO_USE_TIM3)
 void TIM3_IRQHandler(void)
-#elif CONFIG_SERVO_TIMNO == 4
+#elif defined(CONFIG_SERVO_USE_TIM4)
 void TIM4_IRQHandler(void)
-#elif CONFIG_SERVO_TIMNO == 5
+#elif defined(CONFIG_SERVO_USE_TIM5)
 void TIM5_IRQHandler(void)
-#elif CONFIG_SERVO_TIMNO == 6
-void TIM6_IRQHandler(void)
-#elif CONFIG_SERVO_TIMNO == 7
-void TIM7_IRQHandler(void)
-#elif CONFIG_SERVO_TIMNO == 8
+#elif defined(CONFIG_SERVO_USE_TIM8)
 void TIM8_CC_IRQHandler(void)
 #else
 #error "Servo library supports TIM1-TIM8 only (other have no interrupts)"
 #endif
 {
     // Select required interrupt
-    if(TIM_GetITStatus(CONFIG_SERVO_TIMER, SERVO_TIMER_IT_CC) != RESET) // output compare
+    if(TIM_GetITStatus(SERVO_TIMER, SERVO_TIMER_IT_CC) != RESET) // output compare
     {
         _servo_timerCompare();
-        TIM_ClearITPendingBit(CONFIG_SERVO_TIMER, SERVO_TIMER_IT_CC);
+        TIM_ClearITPendingBit(SERVO_TIMER, SERVO_TIMER_IT_CC);
     }
-#if CONFIG_SERVO_TIMNO == 1
+#if defined(CONFIG_SERVO_USE_TIM1)
 }
 void TIM1_UP_IRQHandler(void)
 {
-#elif CONFIG_SERVO_TIMNO == 8
+#elif defined(CONFIG_SERVO_USE_TIM8)
 }
 void TIM8_UP_IRQHandler(void)
 {
 #endif
-    if(TIM_GetITStatus(CONFIG_SERVO_TIMER, TIM_IT_Update) != RESET)// timer update
+    if(TIM_GetITStatus(SERVO_TIMER, TIM_IT_Update) != RESET)// timer update
     {
         _servo_timerOverflow();
-        TIM_ClearITPendingBit(CONFIG_SERVO_TIMER, TIM_IT_Update);
+        TIM_ClearITPendingBit(SERVO_TIMER, TIM_IT_Update);
     }
 }
