@@ -4,6 +4,9 @@
 #include <stm32f10x.h>
 #include <stm32f10x_gpio.h>
 #include <stm32f10x_rcc.h>
+#include <stm32f10x_dma.h>
+#include <stm32f10x_adc.h>
+#include <misc.h>
 #include <cerebellum/snippet.h>
 
 /**
@@ -19,9 +22,12 @@ typedef struct {
     GPIO_TypeDef * gpio;
     uint16_t pin;
     uint32_t mode;
+    uint8_t channel; // for ADC
+    uint8_t chid; // keep it - value is for library
 } sensor_t;
 
-void sensor_init(sensor_t * sensor);
+void sensor_init(void); // pre-launch library initialisation (DMA, ADC)
+void sensor_add(sensor_t * sensor);
 void sensor_addInterrupt(sensor_t * sensor);
 uint32_t sensor_read(sensor_t * sensor);
 

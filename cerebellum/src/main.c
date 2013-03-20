@@ -73,16 +73,27 @@ int main(void)
     uart_init(3, 9600);
     uart_init(1, 57600);
     servo_init();
+    sensor_init();
 
     __enable_irq();
 
-    // Init push-button on PA15
-    sensor_t push1 = {
-        .gpio = GPIOA,
-        .pin = (1<<15),
-        .mode = SENSOR_PASSIVE_GND
+    // Init ADC10 on PC0
+    sensor_t adc = {
+        .gpio = GPIOC,
+        .pin = 1,
+        .mode = SENSOR_ANALOG,
+        .channel = 10
     };
-    sensor_init(&push1);
+
+    sensor_t adc2 = {
+        .gpio = GPIOA,
+        .pin = (1<<1),
+        .mode = SENSOR_ANALOG,
+        .channel = 1
+    };
+
+    sensor_add(&adc2);
+    sensor_add(&adc);
 
     SysTick_Config(SystemCoreClock / 100); // 10 ms timer period
 
@@ -107,10 +118,9 @@ int main(void)
     AFIO->MAPR &= ~(7 << 24);
     AFIO->MAPR |= (4 << 24);
 
-    servo first = servo_add(GPIOB, 8);
 
     // In infinite loop - rotate servo 1 and 2
-    while(1)
+    /*while(1)
     {
         int i;
         for(i=2; i<=2040; i+=2)
@@ -124,6 +134,15 @@ int main(void)
             delay(10);
         }
 
+    }*/
+
+    // Check ADC
+    while(1)
+    {
+        if(sensor_read(&adc) > sensor_read(&adc2))
+            led_on(1);
+        else
+            led_off(1);
     }
 
     //int i;

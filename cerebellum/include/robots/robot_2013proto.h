@@ -127,6 +127,20 @@
  */
 
 /**
+ * @addgroup Sensors library
+ * @{
+ */
+
+#define CONFIG_SENSORS_ADC_MAX_CHANNELS 16
+#define CONFIG_SENSORS_ADC_SAMPLETIME ADC_SampleTime_41Cycles5
+#define CONFIG_SENSORS_USE_ADC1
+// CONFIG_SENSORS_USE_ADC3 is not set
+
+/**
+ * @}
+ */
+
+/**
 * @addgroup Stabilisation config
 * @{
 */
