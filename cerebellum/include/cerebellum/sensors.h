@@ -18,6 +18,8 @@
 #define SENSOR_ACTIVE_GND 3
 #define SENSOR_ACTIVE_VCC 4
 #define SENSOR_ANALOG 5
+#define SENSOR_ANALOG_THRESHOLD_HIGH 6
+#define SENSOR_ANALOG_THRESHOLD_LOW 7
 
 typedef struct {
     GPIO_TypeDef * gpio;
@@ -25,6 +27,7 @@ typedef struct {
     uint32_t mode;
     uint8_t channel; // for ADC
     uint8_t chid; // keep it - value is for library
+    uint16_t threshold;
 } sensor_t;
 
 void sensor_init(void); // pre-launch library initialisation (DMA, ADC)

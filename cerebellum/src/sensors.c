@@ -99,7 +99,8 @@ void sensor_add(sensor_t * sensor)
             pin_GPIO.GPIO_Mode = GPIO_Mode_IPD;
             break;
         case SENSOR_ANALOG:
-            
+        case SENSOR_ANALOG_THRESHOLD_HIGH:
+        case SENSOR_ANALOG_THRESHOLD_LOW:
             // 0. Check for free channel
             if(_adc_numberOfChannels >= 16) return; // no channel, sorry
 
@@ -137,7 +138,6 @@ void sensor_add(sensor_t * sensor)
 
             // Launch ADC convertion
             ADC_SoftwareStartConvCmd(SENSORS_ADC, ENABLE);
-
             break;
         default:
             pin_GPIO.GPIO_Mode = GPIO_Mode_IN_FLOATING;
@@ -155,6 +155,20 @@ uint32_t sensor_read(sensor_t * sensor)
     if(sensor->mode == SENSOR_ANALOG)
     {
         return _adc_measures[sensor->chid];
+    }
+    else if(sensor->mode == SENSOR_ANALOG_THRESHOLD_HIGH)
+    {
+        if(_adc_measures[sensor->chid] > sensor->threshold)
+            return 1;
+        else
+            return 0;
+    }
+    else if(sensor->mode == SENSOR_ANALOG_THRESHOLD_LOW)
+    {
+        if(_adc_measures[sensor->chid] < sensor->threshold)
+            return 1;
+        else
+            return 0;
     }
     else if(sensor->mode == SENSOR_ACTIVE_GND || sensor->mode == SENSOR_PASSIVE_GND)
     {
