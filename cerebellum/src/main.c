@@ -32,30 +32,6 @@ void SysTick_Handler(void)
     if(_delay > 0)
         _delay--;
 }
-/*
-void goto_point(int32_t x, int32_t y, int32_t pwm)
-{
-    // Stage 1. Get current coordinates
-    int32_t cx, cy;
-    cx = getX();
-    cy = getY();
-
-    // Stage 2. Get current angle
-    float cangle = getAngle();
-
-    // Stage 3. Calculate path
-    uint32_t path = (uint32_t) sqrt((x-cx)*(x-cx) + (y-cy)*(y-cy));
-    float angle = atan2((float) (y-cy), (float) (x-cx));
-
-    // Stage 4. Rotate robot to the new angle
-    chassis_setAngle(pwm, angle);
-
-    // Stage 5. Go to the path
-    chassis_line(pwm, path);
-
-    // Here we should insert some coordinates stabilisation
-}
-*/
 
 void _delay_ms(uint32_t time)
 {
@@ -65,7 +41,7 @@ void _delay_ms(uint32_t time)
 
 extern int32_t move_getMidAcc(void);
 
-int main(void)
+static inline void _init_io(void)
 {
     chassis_init();
     encoders_init();
@@ -77,25 +53,96 @@ int main(void)
 
     __enable_irq();
 
-    // Init ADC10 on PC0
-    /*sensor_t adc = {
-        .gpio = GPIOC,
-        .pin = 1,
-        .mode = SENSOR_ANALOG,
-        .channel = 10
-    };
-
-    sensor_t adc2 = {
-        .gpio = GPIOA,
-        .pin = (1<<1),
-        .mode = SENSOR_ANALOG,
-        .channel = 1
-    };
-
-    sensor_add(&adc2);
-    sensor_add(&adc);*/
-
     SysTick_Config(SystemCoreClock / 100); // 10 ms timer period
+}
+
+/**
+ * Periphery global variables
+ */
+servo elevator, candle_h, candle_l, hold_l, hold_r;
+sensor_t limiter_l, limiter_r, elevator_h, elevator_l, line_l, line_r, wall_front, wall_rear; // robot sensors
+sensor_t shmorgalka, field_select, button1, button2; // user interface
+
+static inline void _init_periph(void)
+{
+    // 1. Servos
+    elevator = servo_add(GPIOB, 1);
+    candle_h = servo_add(GPIOC, 5);
+    candle_l = servo_add(GPIOB, 0);
+    hold_l = servo_add(GPIOB, 12);
+    hold_r = servo_add(GPIOB, 13);
+
+    // 2. Sensors
+    limiter_l.mode = SENSOR_ACTIVE_GND;
+    limiter_l.gpio = GPIOA;
+    limiter_l.pin = GPIO_Pin_15;
+    sensor_add(&limiter_l);
+    
+    limiter_r.mode = SENSOR_ACTIVE_GND;
+    limiter_r.gpio = GPIOA;
+    limiter_r.pin = GPIO_Pin_14;
+    sensor_add(&limiter_r);
+    
+    button1.mode = SENSOR_PASSIVE_GND;
+    button1.gpio = GPIOA;
+    button1.pin = GPIO_Pin_13;
+    sensor_add(&button1);
+    
+    button2.mode = SENSOR_PASSIVE_GND;
+    button2.gpio = GPIOA;
+    button2.pin = GPIO_Pin_8;
+    sensor_add(&button1);
+
+    field_select.mode = SENSOR_PASSIVE_GND;
+    field_select.gpio = GPIOC;
+    field_select.pin = GPIO_Pin_8;
+    sensor_add(&field_select);
+    
+    shmorgalka.mode = SENSOR_PASSIVE_GND;
+    shmorgalka.gpio = GPIOC;
+    shmorgalka.pin = GPIO_Pin_7;
+    sensor_add(&shmorgalka);
+    
+    elevator_h.mode = SENSOR_PASSIVE_GND;
+    elevator_h.gpio = GPIOC;
+    elevator_h.pin = GPIO_Pin_6;
+    sensor_add(&elevator_h);
+    
+    elevator_l.mode = SENSOR_PASSIVE_GND;
+    elevator_l.gpio = GPIOC;
+    elevator_l.pin = GPIO_Pin_4;
+    sensor_add(&elevator_l);
+
+    wall_front.mode = SENSOR_ACTIVE_VCC;
+    wall_front.gpio = GPIOA;
+    wall_front.pin = GPIO_Pin_4;
+    sensor_add(&wall_front);
+    
+    wall_rear.mode = SENSOR_ACTIVE_VCC;
+    wall_rear.gpio = GPIOA;
+    wall_rear.pin = GPIO_Pin_3;
+    sensor_add(&wall_rear);
+
+    line_l.mode = SENSOR_ANALOG_THRESHOLD_HIGH;
+    line_l.gpio = GPIOA;
+    line_l.pin = GPIO_Pin_2;
+    line_l.channel = 2;
+    sensor_add(&line_l);
+    
+    line_r.mode = SENSOR_ANALOG_THRESHOLD_HIGH;
+    line_r.gpio = GPIOC;
+    line_r.pin = GPIO_Pin_3;
+    line_r.channel = 13;
+    sensor_add(&line_r);
+}
+
+int main(void)
+{
+    // 1. Init I/O
+    _init_io();
+
+    // 2. Configuring all sensors, servos etc.
+    _init_periph();
 
     // Configuring PID
     pidConfig cnf = {
@@ -118,48 +165,6 @@ int main(void)
     AFIO->MAPR &= ~(7 << 24);
     AFIO->MAPR |= (4 << 24);
 
-    servo first = servo_add(GPIOB, 0);
-    servo second = servo_add(GPIOC, 5);
-
-    // In infinite loop - rotate servo 1 and 2
-    while(1)
-    {
-        int i;
-        for(i=450; i<=1300; i+=2)
-        {
-            servo_write(first, i);
-            servo_write(second, i);
-            delay(10);
-        }
-        for(i=1300; i>=450; i-=2)
-        {
-            servo_write(first, i);
-            servo_write(second, i);
-            delay(10);
-        }
-
-    }
-
-    // Check ADC
-/*    while(1)
-    {
-        if(sensor_read(&adc) > sensor_read(&adc2))
-            led_on(1);
-        else
-            led_off(1);
-    }*/
-
-    //int i;
-    /*
-    for(i=0; i<4; i++)
-    {
-        move_line(6000, 10, mmToTicks(500));
-        while(move_isBusy());
-        move_rotate(2000, 30, 3.14159/2);
-        while(move_isBusy());
-    }
-    */
-    //printf("Required: %06d\n\r\n", (int) (2 * 3.14159 * getChassisRadius()));
     /*while(minBrake > 0)
     {    
         // 1. Set MinBrakeDelta
