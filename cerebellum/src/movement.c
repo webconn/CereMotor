@@ -67,10 +67,10 @@ void move_init(void)
     rf1.pin = (1<<2);
     rf1.mode = SENSOR_ACTIVE_GND;
 
-    sensor_init(&rf1, RCC_APB2Periph_GPIOA);
-    sensor_init(&rf2, RCC_APB2Periph_GPIOA);
-    sensor_init(&limiter1, RCC_APB2Periph_GPIOA);
-    sensor_init(&limiter2, RCC_APB2Periph_GPIOA);
+    sensor_add(&rf1);
+    sensor_add(&rf2);
+    sensor_add(&limiter1);
+    sensor_add(&limiter2);
 }
 
 // Tick function - running freely in SysTick and updating configuration

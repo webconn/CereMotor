@@ -57,7 +57,7 @@ void goto_point(int32_t x, int32_t y, int32_t pwm)
 }
 */
 
-void delay(uint32_t time)
+void _delay_ms(uint32_t time)
 {
     _delay = time / 10;
     while(_delay > 0);;;
