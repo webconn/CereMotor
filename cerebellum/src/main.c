@@ -17,6 +17,8 @@
 #include <stdio.h>
 #include <math.h>
 
+#include <robots/actions2013.h>
+
 #define LEFT 1
 #define RIGHT 0
 
@@ -59,7 +61,7 @@ static inline void _init_io(void)
 /**
  * Periphery global variables
  */
-servo elevator, candle_h, candle_l, hold_l, hold_r;
+servo elevator, bigpaw, smallpaw, hold_l, hold_r;
 sensor_t limiter_l, limiter_r, elevator_h, elevator_l, line_l, line_r, wall_front, wall_rear; // robot sensors
 sensor_t shmorgalka, field_select, button1, button2; // user interface
 
@@ -67,8 +69,8 @@ static inline void _init_periph(void)
 {
     // 1. Servos
     elevator = servo_add(GPIOB, 1);
-    candle_h = servo_add(GPIOC, 5);
-    candle_l = servo_add(GPIOB, 0);
+    bigpaw = servo_add(GPIOC, 5);
+    smallpaw = servo_add(GPIOB, 0);
     hold_l = servo_add(GPIOB, 12);
     hold_r = servo_add(GPIOB, 13);
 
@@ -134,6 +136,9 @@ static inline void _init_periph(void)
     line_r.pin = GPIO_Pin_3;
     line_r.channel = 13;
     sensor_add(&line_r);
+
+    // Throw required sensors into actions list
+    actions_init(bigpaw, smallpaw, elevator, &elevator_h, &elevator_l);
 }
 
 int main(void)

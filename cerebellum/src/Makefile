@@ -9,3 +9,4 @@ objects-$(CONFIG_USE_SENSORS)+=sensors.o
 objects-$(CONFIG_USE_SERVO)+=servo.o
 
 subdirs-$(CONFIG_USE_PERIPHBOARD)+=periph
+subdirs-$(CONFIG_USE_ACTIONS)+=robot

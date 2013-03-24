@@ -44,6 +44,10 @@ menu "Robot modules"
         depends on USE_PERIPHBOARD
         bool "Servo library"
         default "n"
+
+    config USE_ACTIONS
+        bool "Robot actions"
+        default "n"
         
 endmenu
 
