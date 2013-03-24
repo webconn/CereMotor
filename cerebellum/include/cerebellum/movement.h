@@ -4,9 +4,13 @@
 #include <stm32f10x.h>
 
 // Functions
+void move_init(void);
 void move_tick(void);
 void move_line(uint32_t pwm, uint32_t acceleration, uint32_t path);
 void move_rotate(uint32_t path, uint32_t acceleration, float angle);
+void move_refreshAngle(void);
+void move_wall(uint32_t pwm, uint32_t acceleration, uint32_t path);
+
 int32_t move_getPWM(uint8_t val);
 int move_isBusy(void);
 

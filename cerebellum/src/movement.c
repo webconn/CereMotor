@@ -3,11 +3,16 @@
 #include <cerebellum/pid.h>
 #include <cerebellum/deltacoords.h>
 #include <cerebellum/encoders.h>
+#include <cerebellum/sensors.h>
+#include <cerebellum/led.h>
+#include <stm32f10x.h>
 
 #include <robots/config.h>
 
 #define LEFT 1
 #define RIGHT 0
+
+#define PI 3.141593
 
 // MinBrakeDelta is a calibrated value
 int32_t MinBrakeDelta = 0;
@@ -33,6 +38,40 @@ int moveMode = 0;
 inline void _move_stay(void);
 inline void _move_line(void);
 inline void _move_rotate(void);
+inline void _move_wall(void);
+
+sensor_t limiter1, limiter2, rf1, rf2;
+
+void move_init(void)
+{
+    // Here we init barrier rangefinders
+    // and limiter buttons
+    
+    // Init left limiter button (on PA15)
+    limiter1.gpio = GPIOA;
+    limiter1.pin = (1<<15);
+    limiter1.mode = SENSOR_ACTIVE_GND;
+
+    // Init right limiter button (on PA14)
+    limiter2.gpio = GPIOA;
+    limiter2.pin = (1<<14);
+    limiter2.mode = SENSOR_ACTIVE_GND;
+
+    // Init rear barrier rangefinder
+    rf2.gpio = GPIOA;
+    rf2.pin = (1<<3);
+    rf2.mode = SENSOR_ACTIVE_GND;
+
+    // Init front barrier rangefinder
+    rf1.gpio = GPIOA; 
+    rf1.pin = (1<<2);
+    rf1.mode = SENSOR_ACTIVE_GND;
+
+    sensor_init(&rf1, RCC_APB2Periph_GPIOA);
+    sensor_init(&rf2, RCC_APB2Periph_GPIOA);
+    sensor_init(&limiter1, RCC_APB2Periph_GPIOA);
+    sensor_init(&limiter2, RCC_APB2Periph_GPIOA);
+}
 
 // Tick function - running freely in SysTick and updating configuration
 void move_tick(void)
@@ -41,8 +80,10 @@ void move_tick(void)
         _move_stay();
     else if(moveMode < 3)
         _move_line();
-    else
+    else if(moveMode < 5)
         _move_rotate();
+    else
+        _move_wall();
 }
 
 // Stay tick function
@@ -369,6 +410,123 @@ inline void _move_rotate(void)
     chassis_write(leftPWM, rightPWM);
 }
 
+/*
+ * Move near the wall (by using barrier rangefinders)
+ */
+
+int32_t integral = 0;
+int32_t oldState = 0;
+int32_t pulse = 0;
+
+void _move_wall(void)
+{
+    // 1. Get paths by both encoders
+    int32_t leftPath = encoder_getPath(1);
+    int32_t rightPath = encoder_getPath(0);
+
+    int32_t aripPath = (leftPath + rightPath) / 2; // sum and divide by 2
+    
+    int32_t leftSpeed = encoder_getDelta(1);
+    int32_t rightSpeed = encoder_getDelta(0);
+
+    int32_t acceleration = ((leftSpeed + rightSpeed) / 2) - lastSpeed;
+
+    lastSpeed = (leftSpeed + rightSpeed) / 2;
+
+    if(moveMode == 6) // normal operation (no brakes)
+    {
+        // 1. Calculate middle acceleration
+        if(!_midAcc && acceleration > 0)
+        {
+            _midAcc = acceleration;
+        }
+        else if(acceleration > _midAcc)
+        {
+            _midAcc = acceleration;
+        }
+
+        // Increase PWM
+        if(_movePWM < _destPWM) // acceleration
+        {
+            _movePWM += _moveAcc;
+        }
+        else // start normal operaion
+        {
+            _movePWM = _destPWM;
+        }
+
+        // Check if we need to brake
+        if((_destPath - aripPath) <= _accPath || (_accPath == 0 && (_destPath - aripPath) <= aripPath))
+        {
+            moveMode = 5;
+        }
+        
+        // Check acceleration: if accelerated, take the measure
+        if(acceleration <= 0 && !_accPath && _movePWM == _destPWM)
+        {
+            _accPath = aripPath;
+            _midAcc /= _numMeasures;
+        }
+    }
+    else 
+    {
+        // At this stage we need to control encoders speed
+        if(leftSpeed > 5 && rightSpeed > 5 && acceleration >= -_midAcc) // speed down while we should move
+            _movePWM -= _moveAcc;
+
+        
+        // If we reached end, stop engines and shut algo down
+        if(aripPath >= _destPath)
+        {
+            moveMode = 0; // stop engines
+            _movePWM = 0;
+            _accPath = 0;
+            _midAcc = 0;
+            _move_stay(); // stop right now, I said!
+            return;
+        }
+    }
+
+    // Stabilisation by barrier rangefinders
+    // We think that ON-state of rangefinder is
+    // when range is less than barrier (we are so
+    // close to wall)
+    // rf1 is front, rf2 is rear
+
+    // 1. Collect data from rangefinders
+    int32_t state = ((sensor_read(&rf1) > 0) << 1)|((sensor_read(&rf2) > 0));
+
+    // 2. Analyse the state
+    if(state >= 2) // go away from wall
+    {
+        state++;
+    }
+    state -= 2; // now we have coefficient for movement direction and intensivity
+    
+    integral += state;
+
+    if(state > 0)
+    {
+        leftPWM = _movePWM;
+        rightPWM = _movePWM / 2 / state + integral / 2048;
+    }
+    else
+    {
+        state = -state;
+        leftPWM = _movePWM / 2 / state + integral / 2048;
+        rightPWM = _movePWM;
+    }
+/*
+    #if defined(CONFIG_BARRIER_SIDE_LEFT)
+    leftPWM = _movePWM + integral;
+    rightPWM = _movePWM - integral;
+    #elif defined(CONFIG_BARRIER_SIDE_RIGHT)
+    leftPWM = _movePWM - integral;
+    rightPWM = _movePWM + integral;
+    #endif*/
+    chassis_write(leftPWM, rightPWM);
+}
+
 // Debug purposes
 int32_t move_getPWM(uint8_t val)
 {
@@ -428,11 +586,60 @@ void move_rotate(uint32_t pwm, uint32_t acceleration, float dAngle)
 }
 
 /**
+ * Move by wall initializer
+ */
+void move_wall(uint32_t pwm, uint32_t acceleration, uint32_t path)
+{
+    // 0. Clear encoder data
+    encoder_reset(0);
+    encoder_reset(1);
+
+    // 1. Set data
+    _destPWM = pwm;
+    _moveAcc = acceleration;
+    _destPath = path;
+
+    // 2. Run algo in background
+    moveMode = 6;
+}
+
+
+/**
+ * Clear movement parametres
+ */
+void _move_clear(void)
+{
+    flag_GetMinBrake = 0;
+    flag_CorrectorDirSet = 0;
+    MinBrakePath = 0;
+    lastDelta = 0;
+    numMeasures = 0;
+    deltaSpeed = 0;
+    rqSpeed = 0;
+    rqAngle = 0;
+    _mdir = 0;
+    _movePWM = 0;
+    _moveAcc = 0;
+    _destPWM = 0;
+    _accPath = 0;
+    _destPath = 0;
+    lastSpeed = 0;
+    _midAcc = 0;
+    sign = 0;
+    _numMeasures = 0;
+}
+
+/**
  * Emergency stop
  */
 void move_stop(void)
 {
+    // Just stop the engines and clear moveMode
+    moveMode = 0;
+    _move_stay();
 
+    // Clear all movement parametres
+    _move_clear();
 }
 
 int32_t move_getMidAcc(void)
@@ -457,6 +664,68 @@ void move_continue(void)
 {
 
 }
+
+/**
+ * Refresh angle procedure
+ * Robot moves to wall, and, when it
+ * reaches wall, refresh the angle and stop engines
+ */
+
+void move_refreshAngle(void)
+{
+    // 0. Select correcting angle
+    float currentAngle = getAngle();
+    int32_t multiply = 0;
+    while(currentAngle >= 2 * PI)
+    {
+        currentAngle -= 2 * PI;
+        multiply--;
+    }
+    while(currentAngle < 0)
+    {
+        currentAngle += 2 * PI;
+        multiply++;
+    }
+
+    // Select current angle
+    float realAngle = 0;
+    if(currentAngle >= PI / 4 && currentAngle <= 3 * PI / 4)
+        realAngle = PI / 2;
+    else if(currentAngle >= 3 * PI / 4 && currentAngle <= 5 * PI / 4)
+        realAngle = PI;
+    else if(currentAngle >= 5 * PI / 4 && currentAngle <= 7 * PI / 4)
+        realAngle = 3 * PI / 2;
+    // Else realAngle = 0 - ready
+    
+    // 1. Rotate closely to required angle for not to destroy something
+    //move_rotate(1000, 20, realAngle - currentAngle);
+    //while(moveMode > 0);
+
+    // 1. Init movement by straight line to back with minimal speed
+    move_line(-(CONFIG_PWM_ACCURACY / 8), -5, -mmToTicks(500));
+
+    // 2. Wait while limiters are inactive
+    while(moveMode > 0)
+    {
+        if(sensor_read(&limiter1) && sensor_read(&limiter2))
+            break;
+        if(moveMode == 1) // robot tries to stop
+        {
+            moveMode = 2; // make it continue moving
+            _destPath += mmToTicks(10);
+        }
+    }
+
+    // Little delay
+    extern void _delay_ms(uint32_t time);
+    _delay_ms(500);
+
+    // 3. Now e-stop engines
+    move_stop();
+    
+    // Update angle
+    updateAngle(realAngle);
+} 
 
 /**
  * Check movement system business
