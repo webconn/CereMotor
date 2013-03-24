@@ -24,9 +24,27 @@
 #define UP 1
 #define DOWN 2
 
-void actions_init(servo bpaw, servo spaw, servo elev, sensor_t * limit_h, sensor_t * limit_l);
+/**
+ * Grips
+ */
+#ifndef LEFT
+#define LEFT 1
+#endif
+#ifndef RIGHT
+#define RIGHT 2
+#endif
+
+/**
+ * Grip states
+ */
+#define OPEN 1
+#define HOLD 2
+#define UNHOLD 3
+
+void actions_init(servo bpaw, servo spaw, servo elev, servo gl, servo gr, sensor_t * limit_h, sensor_t * limit_l);
 
 void paw_move(uint16_t paw, uint16_t state);
 void elevator_move(uint16_t state);
+void grip_set(uint16_t grip, uint16_t state);
 
 #endif

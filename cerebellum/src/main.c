@@ -17,10 +17,10 @@
 #include <stdio.h>
 #include <math.h>
 
-#include <robots/actions2013.h>
-
 #define LEFT 1
 #define RIGHT 0
+
+#include <robots/actions2013.h>
 
 volatile uint32_t _delay = 0;
 
@@ -61,7 +61,7 @@ static inline void _init_io(void)
 /**
  * Periphery global variables
  */
-servo elevator, bigpaw, smallpaw, hold_l, hold_r;
+servo elevator, bigpaw, smallpaw, grip_l, grip_r;
 sensor_t limiter_l, limiter_r, elevator_h, elevator_l, line_l, line_r, wall_front, wall_rear; // robot sensors
 sensor_t shmorgalka, field_select, button1, button2; // user interface
 
@@ -71,8 +71,8 @@ static inline void _init_periph(void)
     elevator = servo_add(GPIOB, 1);
     bigpaw = servo_add(GPIOC, 5);
     smallpaw = servo_add(GPIOB, 0);
-    hold_l = servo_add(GPIOB, 12);
-    hold_r = servo_add(GPIOB, 13);
+    grip_l = servo_add(GPIOB, 12);
+    grip_r = servo_add(GPIOB, 13);
 
     // 2. Sensors
     limiter_l.mode = SENSOR_ACTIVE_GND;
@@ -138,7 +138,7 @@ static inline void _init_periph(void)
     sensor_add(&line_r);
 
     // Throw required sensors into actions list
-    actions_init(bigpaw, smallpaw, elevator, &elevator_h, &elevator_l);
+    actions_init(bigpaw, smallpaw, elevator, grip_l, grip_r, &elevator_h, &elevator_l);
 }
 
 int main(void)
@@ -169,6 +169,8 @@ int main(void)
     // dirty-hack - disable JTAG using registers
     AFIO->MAPR &= ~(7 << 24);
     AFIO->MAPR |= (4 << 24);
+
+    while(1);;;
 
     /*while(minBrake > 0)
     {    
@@ -204,11 +206,6 @@ int main(void)
 
         minBrake--;
     }*/
-
-    while(1)
-    {
-        printf("A: %f; PATH: (%06d, %06d)\r\r", getAngle(), (int) encoder_getPath(LEFT), (int) encoder_getPath(RIGHT));
-    }
 
     while(1);;; // end of program
     
