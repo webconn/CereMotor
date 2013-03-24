@@ -4,6 +4,8 @@ typedef struct {
     GPIO_TypeDef * gpio;
     uint16_t bitmask;
     uint16_t value;
+    uint16_t min;
+    uint16_t max;
 } _servo_t;
 
 volatile struct _sflags {
@@ -165,9 +167,31 @@ servo servo_add(GPIO_TypeDef * gpio, uint8_t pin)
  */
 void servo_write(servo servo_id, uint16_t value)
 {
+    if(value > servo_queue[servo_id].max)
+        value = servo_queue[servo_id].max;
+    else if(value < servo_queue[servo_id].min)
+        value = servo_queue[servo_id].min;
     if(value == 0) value = 1;
     servo_queue[servo_id].value = value;
     _servo_sort();
+}
+
+/**
+ * Set abstract value (with limits)
+ * Value from 0 to 180
+ */
+void servo_set(servo servo_id, uint8_t value)
+{
+    servo_write(servo_id, (value * (servo_queue[servo_id].max - servo_queue[servo_id].min) / 180) + servo_queue[servo_id].min);
+}
+
+/**
+ * Configure servo pulse limits
+ */
+void servo_setLimits(servo servo_id, uint16_t min, uint16_t max)
+{
+    servo_queue[servo_id].min = min;
+    servo_queue[servo_id].max = max;
 }
 
 /**

@@ -14,5 +14,7 @@ typedef uint32_t servo;
 void servo_init(void);
 servo servo_add(GPIO_TypeDef * gpio, uint8_t pin);
 void servo_write(servo servo_id, uint16_t value);
+void servo_set(servo servo_id, uint8_t value);
+void servo_setLimits(servo servo_id, uint16_t min, uint16_t max);
 
 #endif
