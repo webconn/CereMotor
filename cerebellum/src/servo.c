@@ -146,6 +146,8 @@ servo servo_add(GPIO_TypeDef * gpio, uint8_t pin)
     servo_queue[new_pos].gpio = gpio;
     servo_queue[new_pos].bitmask = (1<<pin);
     servo_queue[new_pos].value = 1;
+    servo_queue[new_pos].max = CONFIG_SERVO_MAX_VALUE;
+    servo_queue[new_pos].min = CONFIG_SERVO_MIN_VALUE;
 
     p_servo_queue[new_pos] = &servo_queue[new_pos];
 
