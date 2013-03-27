@@ -1,18 +1,4 @@
 #include <cerebellum/movement.h>
-#include <cerebellum/chassis.h>
-#include <cerebellum/pid.h>
-#include <cerebellum/deltacoords.h>
-#include <cerebellum/encoders.h>
-#include <cerebellum/sensors.h>
-#include <cerebellum/led.h>
-#include <stm32f10x.h>
-
-#include <robots/config.h>
-
-#define LEFT 1
-#define RIGHT 0
-
-#define PI 3.141593
 
 // MinBrakeDelta is a calibrated value
 int32_t MinBrakeDelta = 0;
@@ -40,37 +26,14 @@ inline void _move_line(void);
 inline void _move_rotate(void);
 inline void _move_wall(void);
 
-sensor_t limiter1, limiter2, rf1, rf2;
+sensor_t * _limiter_left, * _limiter_right;
 
-void move_init(void)
+void move_initLimiters(sensor_t * lim_l, sensor_t * lim_r)
 {
     // Here we init barrier rangefinders
     // and limiter buttons
-    
-    // Init left limiter button (on PA15)
-    limiter1.gpio = GPIOA;
-    limiter1.pin = (1<<15);
-    limiter1.mode = SENSOR_ACTIVE_GND;
-
-    // Init right limiter button (on PA14)
-    limiter2.gpio = GPIOA;
-    limiter2.pin = (1<<14);
-    limiter2.mode = SENSOR_ACTIVE_GND;
-
-    // Init rear barrier rangefinder
-    rf2.gpio = GPIOA;
-    rf2.pin = (1<<3);
-    rf2.mode = SENSOR_ACTIVE_GND;
-
-    // Init front barrier rangefinder
-    rf1.gpio = GPIOA; 
-    rf1.pin = (1<<2);
-    rf1.mode = SENSOR_ACTIVE_GND;
-
-    sensor_add(&rf1);
-    sensor_add(&rf2);
-    sensor_add(&limiter1);
-    sensor_add(&limiter2);
+    _limiter_left = lim_l;
+    _limiter_right = lim_r;
 }
 
 // Tick function - running freely in SysTick and updating configuration
@@ -707,7 +670,7 @@ void move_refreshAngle(void)
     // 2. Wait while limiters are inactive
     while(moveMode > 0)
     {
-        if(sensor_read(&limiter1) && sensor_read(&limiter2))
+        if(sensor_read(_limiter_left) && sensor_read(_limiter_right))
             break;
         if(moveMode == 1) // robot tries to stop
         {
