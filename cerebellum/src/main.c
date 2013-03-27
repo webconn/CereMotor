@@ -140,6 +140,7 @@ static inline void _init_periph(void)
     // Throw required sensors into actions list
     actions_init(bigpaw, smallpaw, elevator, grip_l, grip_r, &elevator_h, &elevator_l);
     move_initLimiters(&limiter_l, &limiter_r);
+    move_initWallSensor(&wall_front, &wall_rear);
 }
 
 int main(void)

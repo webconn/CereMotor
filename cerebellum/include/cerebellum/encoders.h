@@ -1,3 +1,5 @@
+#ifndef CEREBELLUM_ENCODERS_H
+#define CEREBELLUM_ENCODERS_H
 /**
  * @file include/cerebellum/encoders.h
  * @brief Headers file for Encoders API
@@ -21,3 +23,4 @@ int32_t encoder_getDelta(uint8_t encoder);
 int32_t encoder_getPath(uint8_t encoder);
 
 void encoders_parser(void); // encoder updater, must be running in the timer
+#endif

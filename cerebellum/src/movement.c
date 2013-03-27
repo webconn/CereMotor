@@ -26,7 +26,7 @@ inline void _move_line(void);
 inline void _move_rotate(void);
 inline void _move_wall(void);
 
-sensor_t * _limiter_left, * _limiter_right;
+sensor_t * _limiter_left, * _limiter_right, * _rf_front, * _rf_rear;
 
 void move_initLimiters(sensor_t * lim_l, sensor_t * lim_r)
 {
@@ -34,6 +34,12 @@ void move_initLimiters(sensor_t * lim_l, sensor_t * lim_r)
     // and limiter buttons
     _limiter_left = lim_l;
     _limiter_right = lim_r;
+}
+
+void move_initWallSensor(sensor_t * rf_front, sensor_t * rf_rear)
+{
+    _rf_front = rf_front;
+    _rf_rear = rf_rear;
 }
 
 // Tick function - running freely in SysTick and updating configuration
@@ -457,7 +463,7 @@ void _move_wall(void)
     // rf1 is front, rf2 is rear
 
     // 1. Collect data from rangefinders
-    int32_t state = ((sensor_read(&rf1) > 0) << 1)|((sensor_read(&rf2) > 0));
+    int32_t state = ((sensor_read(_rf_front) > 0) << 1)|((sensor_read(_rf_rear) > 0));
 
     // 2. Analyse the state
     if(state >= 2) // go away from wall
