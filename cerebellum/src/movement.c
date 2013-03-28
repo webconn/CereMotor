@@ -49,7 +49,7 @@ void move_tick(void)
         _move_stay();
     else if(moveMode < 3)
         _move_line();
-    else if(moveMode < 5)
+    else if(moveMode < 6)
         _move_rotate();
     else
         _move_wall();
@@ -70,6 +70,7 @@ int32_t lastSpeed = 0;
 int32_t _midAcc = 0;
 int32_t sign = 0;
 int32_t _numMeasures = 0;
+int32_t _moveDirection = 0; // 0 for forward, 1 for backward
 
 int32_t leftPWM, rightPWM;
 
@@ -81,10 +82,18 @@ inline void _move_line(void)
     int32_t leftPath = encoder_getPath(1);
     int32_t rightPath = encoder_getPath(0);
 
-    int32_t aripPath = (leftPath + rightPath) / 2; // sum and divide by 2
-
     int32_t leftSpeed = encoder_getDelta(1);
     int32_t rightSpeed = encoder_getDelta(0);
+
+    if(_moveDirection)
+    {
+        leftSpeed = -leftSpeed;
+        rightSpeed = -rightSpeed;
+        leftPath = -leftPath;
+        rightPath = -rightPath;
+    }
+
+    int32_t aripPath = (leftPath + rightPath) / 2; // sum and divide by 2
 
     int32_t acceleration = ((leftSpeed + rightSpeed) / 2) - lastSpeed;
 
@@ -161,7 +170,10 @@ inline void _move_line(void)
         rightPWM = -CONFIG_PWM_ACCURACY;
 
     // 4. Write data to chassis
-    chassis_write(leftPWM, rightPWM);
+    if(_moveDirection)
+        chassis_write(-leftPWM, -rightPWM);
+    else
+        chassis_write(leftPWM, rightPWM);
 }
 
 /**
@@ -296,13 +308,14 @@ inline void _move_rotate(void)
             _move_stay(); // stop right now, I said!
             midPath = 0;
             flag_GetMinBrake = 0;
+            pid_reset();
             return;
         }
     }
 
     else // moveMode == 3 - correcting angle 
     {
-        rqSpeed = 1; // absolute minimal speed
+        rqSpeed = MinBrakeDelta; // absolute minimal speed
         _movePWM = _movePWM - 2 * (midDelta - rqSpeed);
 
         // Get error in position
@@ -314,6 +327,8 @@ inline void _move_rotate(void)
             // Get error sign
             if(angleError > 0) _mdir = 1; // 1 is greater sign
             else _mdir = 0;
+
+            sign = _mdir;
 
             // Compare it with main sign, set direction and flag for not to
             // Robot need to rotate CCW (_mdir = 1), if it rotated CCW before, but didn't reached target angle
@@ -386,6 +401,7 @@ inline void _move_rotate(void)
 int32_t integral = 0;
 int32_t oldState = 0;
 int32_t pulse = 0;
+int32_t _oldState = 0;
 
 void _move_wall(void)
 {
@@ -402,7 +418,7 @@ void _move_wall(void)
 
     lastSpeed = (leftSpeed + rightSpeed) / 2;
 
-    if(moveMode == 6) // normal operation (no brakes)
+    if(moveMode == 7) // normal operation (no brakes)
     {
         // 1. Calculate middle acceleration
         if(!_midAcc && acceleration > 0)
@@ -427,7 +443,7 @@ void _move_wall(void)
         // Check if we need to brake
         if((_destPath - aripPath) <= _accPath || (_accPath == 0 && (_destPath - aripPath) <= aripPath))
         {
-            moveMode = 5;
+            moveMode = 6;
         }
         
         // Check acceleration: if accelerated, take the measure
@@ -472,17 +488,21 @@ void _move_wall(void)
     }
     state -= 2; // now we have coefficient for movement direction and intensivity
     
+    if(state != _oldState)
+        integral = 0;
+    _oldState = state;
+
     integral += state;
 
     if(state > 0)
     {
         leftPWM = _movePWM;
-        rightPWM = _movePWM / 2 / state + integral / 2048;
+        rightPWM =  -integral;
     }
     else
     {
         state = -state;
-        leftPWM = _movePWM / 2 / state + integral / 2048;
+        leftPWM = -integral;
         rightPWM = _movePWM;
     }
 /*
@@ -508,7 +528,7 @@ int32_t move_getPWM(uint8_t val)
 /**
  * Move by line initializer
  */
-void move_line(uint32_t pwm, uint32_t acceleration, uint32_t path)
+void move_line(int32_t pwm, int32_t acceleration, int32_t path)
 {
     // To go by line, we need to run PID algorithm
     // stabilising paths or angle
@@ -518,6 +538,16 @@ void move_line(uint32_t pwm, uint32_t acceleration, uint32_t path)
     encoder_reset(1);
 
     // 1. Set data
+    if(path < 0)
+    {
+        path = -path;
+        _moveDirection = 1;
+    }
+    else
+    {
+        _moveDirection = 0;
+    }
+
     _destPWM = pwm;
     _moveAcc = acceleration;
     _destPath = path;
@@ -532,7 +562,7 @@ void move_line(uint32_t pwm, uint32_t acceleration, uint32_t path)
 /**
  * Rotate initializer
  */
-void move_rotate(uint32_t pwm, uint32_t acceleration, float dAngle)
+void move_rotate(int32_t pwm, int32_t acceleration, float dAngle)
 {
     // 0. Clear encoders and PWM
     pid_reset();
@@ -557,7 +587,7 @@ void move_rotate(uint32_t pwm, uint32_t acceleration, float dAngle)
 /**
  * Move by wall initializer
  */
-void move_wall(uint32_t pwm, uint32_t acceleration, uint32_t path)
+void move_wall(int32_t pwm, int32_t acceleration, int32_t path)
 {
     // 0. Clear encoder data
     encoder_reset(0);
@@ -569,7 +599,7 @@ void move_wall(uint32_t pwm, uint32_t acceleration, uint32_t path)
     _destPath = path;
 
     // 2. Run algo in background
-    moveMode = 6;
+    moveMode = 7;
 }
 
 
@@ -667,11 +697,11 @@ void move_refreshAngle(void)
     // Else realAngle = 0 - ready
     
     // 1. Rotate closely to required angle for not to destroy something
-    //move_rotate(1000, 20, realAngle - currentAngle);
+    //move_rotate(2000, 20, realAngle - currentAngle);
     //while(moveMode > 0);
 
     // 1. Init movement by straight line to back with minimal speed
-    move_line(-(CONFIG_PWM_ACCURACY / 8), -5, -mmToTicks(500));
+    move_line((CONFIG_PWM_ACCURACY / 2), 20, -mmToTicks(500));
 
     // 2. Wait while limiters are inactive
     while(moveMode > 0)
@@ -681,7 +711,7 @@ void move_refreshAngle(void)
         if(moveMode == 1) // robot tries to stop
         {
             moveMode = 2; // make it continue moving
-            _destPath += mmToTicks(10);
+            _destPath -= mmToTicks(10);
         }
     }
 

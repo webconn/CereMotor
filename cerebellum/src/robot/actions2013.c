@@ -54,13 +54,13 @@ void elevator_move(uint16_t state)
     {
         servo_write(_elevator, 700); // rotate servo to top
         while(!sensor_read(_limiter_h));
-        servo_write(_elevator, 889); // stop elevator
+        servo_write(_elevator, 880); // stop elevator
     }
     else // state == DOWN
     {
-        servo_write(_elevator, 920); // rotate servo to down
+        servo_write(_elevator, 0); // rotate servo to down
         while(!sensor_read(_limiter_l));
-        servo_write(_elevator, 889); // stop
+        servo_write(_elevator, 880); // stop
     }
 }
 

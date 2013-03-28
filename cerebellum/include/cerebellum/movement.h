@@ -22,10 +22,10 @@
 void move_initLimiters(sensor_t * lim_l, sensor_t * lim_r);
 void move_initWallSensor(sensor_t * rf_front, sensor_t * rf_rear);
 void move_tick(void);
-void move_line(uint32_t pwm, uint32_t acceleration, uint32_t path);
-void move_rotate(uint32_t path, uint32_t acceleration, float angle);
+void move_line(int32_t pwm, int32_t acceleration, int32_t path);
+void move_rotate(int32_t path, int32_t acceleration, float angle);
 void move_refreshAngle(void);
-void move_wall(uint32_t pwm, uint32_t acceleration, uint32_t path);
+void move_wall(int32_t pwm, int32_t acceleration, int32_t path);
 
 int32_t move_getPWM(uint8_t val);
 int move_isBusy(void);
