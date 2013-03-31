@@ -182,6 +182,8 @@ int main(void)
     AFIO->MAPR &= ~(7 << 24);
     AFIO->MAPR |= (4 << 24);
 
+    // Manual elevator manipulation
+    // Try to drop elevator
     /*grip_set(LEFT, HOLD);
     grip_set(RIGHT, HOLD);
     elevator_move(UP);
@@ -190,6 +192,7 @@ int main(void)
     grip_set(RIGHT, UNHOLD);*/
     // Here we describe cake candles blowing algo
     
+    while(1);;;
     while(sensor_read(&shmorgalka));;; // shmorgalka
     
     // Select tactics switch
@@ -217,7 +220,7 @@ void tactics_red(void)
 void tactics_blue(void)
 {
     move_refreshAngle();
-
+    /*
     // Start
     move_line(4000, 10, mmToTicks(580));
     while(move_isBusy());
@@ -302,7 +305,7 @@ void tactics_blue(void)
     elevator_move(UP);
 
     while(1);;;
-
+    */
     // Cake
     paw_move(BIG, OPEN);
     paw_move(SMALL, OPEN);
