@@ -5,5 +5,6 @@
 
 void uart_init(uint32_t uart, uint32_t baudrate);
 int uart_send(int uart, int ch);
+uint8_t uart_read(int uart);
 
 #endif

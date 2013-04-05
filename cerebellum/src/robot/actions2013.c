@@ -35,15 +35,15 @@ void paw_move(uint16_t paw, uint16_t state)
     {
         if(state == CLOSE)
         {
-            servo_write(_bigpaw, 430);
+            servo_write(_bigpaw, 450);
         }
         else if(state == OPEN)
         {
-            servo_write(_bigpaw, 1200);
+            servo_write(_bigpaw, 1220);
         }
         else // state == BLOWED
         {
-            servo_write(_bigpaw, 980);
+            servo_write(_bigpaw, 1000);
         }
     }
 }
@@ -54,13 +54,13 @@ void elevator_move(uint16_t state)
     {
         servo_write(_elevator, 700); // rotate servo to top
         while(!sensor_read(_limiter_h));
-        servo_write(_elevator, 876); // stop elevator
+        servo_write(_elevator, 870); // stop elevator
     }
     else // state == DOWN
     {
-        servo_write(_elevator, 896); // unlock servo engine
+        servo_write(_elevator, 925); // rotate servo to bottom
         while(!sensor_read(_limiter_l));
-        // In this case, elevator just in the lowest position. Thanx, Newton!
+        servo_write(_elevator, 894); // lock servo engine
     }
 }
 

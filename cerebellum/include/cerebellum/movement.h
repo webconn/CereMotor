@@ -26,11 +26,14 @@ void move_line(int32_t pwm, int32_t acceleration, int32_t path);
 void move_rotate(int32_t path, int32_t acceleration, float angle);
 void move_refreshAngle(void);
 void move_wall(int32_t pwm, int32_t acceleration, int32_t path);
+void move_toPoint(int32_t x, int32_t y, int32_t pwm, int stab);
+void move_stop(void);
 
 int32_t move_getPWM(uint8_t val);
 int move_isBusy(void);
 
 void move_setMinBrakeDelta(int32_t value);
 int32_t move_getBrakePath(void);
+void move_free();
 
 #endif

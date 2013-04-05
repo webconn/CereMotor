@@ -93,6 +93,27 @@ int uart_send(int uart, int ch)
     return ch;
 }
 
+uint8_t uart_read(int uart)
+{
+    if(uart == 1)
+    {
+        while(USART_GetFlagStatus(USART1, USART_FLAG_RXNE == RESET));
+        return (uint8_t) USART_ReceiveData(USART1);
+    }
+    else if(uart == 2)
+    {
+        while(USART_GetFlagStatus(USART2, USART_FLAG_RXNE == RESET));
+        return (uint8_t) USART_ReceiveData(USART2);
+    }
+    else if(uart == 3)
+    {
+        while(USART_GetFlagStatus(USART3, USART_FLAG_RXNE == RESET));
+        return (uint8_t) USART_ReceiveData(USART3);
+    }
+
+    return 0;
+}
+
 // Don't touch this function! :) It just works
 int _write(int file, char * ptr, int len)
 {

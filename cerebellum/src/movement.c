@@ -1,8 +1,48 @@
 #include <cerebellum/movement.h>
+#include <stdio.h>
 
 // MinBrakeDelta is a calibrated value
 int32_t MinBrakeDelta = 0;
 int32_t BrakeStart = 0;
+
+int moveMode = 0;
+
+extern void _delay_ms(uint32_t ms);
+
+int32_t __errno; // for sqrt()
+void move_toPoint(int32_t x, int32_t y, int32_t pwm, int stab)
+{
+    // Stage 1. Get current coordinates
+    int32_t cx, cy;
+    cx = getX();
+    cy = getY();
+
+    // Stage 2. Get current angle
+    float cangle = getAngle();
+
+    // Stage 3. Calculate path
+    int32_t path = (int32_t) sqrt((x-cx)*(x-cx) + (y-cy)*(y-cy));
+    float angle = atan2((float) (y-cy), (float) (x-cx));
+
+    // Stage 4. Rotate robot to the new angle
+    move_rotate(pwm / 2, 30, angle - cangle);
+    while(moveMode > 0)
+        _delay_ms(10);
+
+    // Stage 5. Go to the path
+    move_line(pwm, 15, path);
+    while(moveMode > 0)
+        _delay_ms(10);
+
+    // Stage 6. Correct angle
+    if(stab)
+    {
+        cangle = getAngle();
+        move_rotate(pwm / 2, 30, angle - cangle);
+        while(moveMode > 0)
+            _delay_ms(10);
+    }
+}
 
 void move_setMinBrakeDelta(int32_t value)
 {
@@ -19,7 +59,6 @@ int32_t move_getBrakePath(void)
 // 1 - go by line
 // 2 - change angle
 
-int moveMode = 0;
 
 inline void _move_stay(void);
 inline void _move_line(void);
@@ -132,7 +171,7 @@ inline void _move_line(void)
         if(acceleration <= 0 && !_accPath && _movePWM == _destPWM)
         {
             _accPath = aripPath;
-            _midAcc /= _numMeasures;
+            _midAcc /= _numMeasures * 4;
         }
     }
     else 
@@ -409,12 +448,19 @@ void _move_wall(void)
     int32_t leftPath = encoder_getPath(1);
     int32_t rightPath = encoder_getPath(0);
 
-    int32_t aripPath = (leftPath + rightPath) / 2; // sum and divide by 2
-    
     int32_t leftSpeed = encoder_getDelta(1);
     int32_t rightSpeed = encoder_getDelta(0);
 
+    if(sign)
+    {
+        leftPath = -leftPath;
+        rightPath = -rightPath;
+        leftSpeed = -leftSpeed;
+        rightSpeed = -rightSpeed;
+    }
+
     int32_t acceleration = ((leftSpeed + rightSpeed) / 2) - lastSpeed;
+    int32_t aripPath = (leftPath + rightPath) / 2; // sum and divide by 2
 
     lastSpeed = (leftSpeed + rightSpeed) / 2;
 
@@ -479,7 +525,11 @@ void _move_wall(void)
     // rf1 is front, rf2 is rear
 
     // 1. Collect data from rangefinders
-    int32_t state = ((sensor_read(_rf_front) > 0) << 1)|((sensor_read(_rf_rear) > 0));
+    int32_t state;
+    if(sign)
+        state = ((sensor_read(_rf_rear) > 0) << 1)|((sensor_read(_rf_front) > 0));
+    else
+        state = ((sensor_read(_rf_front) > 0) << 1)|((sensor_read(_rf_rear) > 0));
 
     // 2. Analyse the state
     if(state >= 2) // go away from wall
@@ -487,6 +537,7 @@ void _move_wall(void)
         state++;
     }
     state -= 2; // now we have coefficient for movement direction and intensivity
+
     
     if(state != _oldState)
         integral = 0;
@@ -505,15 +556,11 @@ void _move_wall(void)
         leftPWM = -integral;
         rightPWM = _movePWM;
     }
-/*
-    #if defined(CONFIG_BARRIER_SIDE_LEFT)
-    leftPWM = _movePWM + integral;
-    rightPWM = _movePWM - integral;
-    #elif defined(CONFIG_BARRIER_SIDE_RIGHT)
-    leftPWM = _movePWM - integral;
-    rightPWM = _movePWM + integral;
-    #endif*/
-    chassis_write(leftPWM, rightPWM);
+
+    if(sign)
+        chassis_write(-leftPWM, -rightPWM);
+    else
+        chassis_write(leftPWM, rightPWM);
 }
 
 // Debug purposes
@@ -564,6 +611,8 @@ void move_line(int32_t pwm, int32_t acceleration, int32_t path)
  */
 void move_rotate(int32_t pwm, int32_t acceleration, float dAngle)
 {
+    if((dAngle >= 0 && dAngle < 0.01) || (dAngle < 0 && dAngle > -0.01))
+        return; // no rotation is needed
     // 0. Clear encoders and PWM
     pid_reset();
     encoder_reset(0);
@@ -596,6 +645,14 @@ void move_wall(int32_t pwm, int32_t acceleration, int32_t path)
     // 1. Set data
     _destPWM = pwm;
     _moveAcc = acceleration;
+
+    sign = 0;
+    if(path < 0)
+    {
+        path = -path;
+        sign = 1;
+    }
+
     _destPath = path;
 
     // 2. Run algo in background
@@ -674,16 +731,21 @@ void move_refreshAngle(void)
 {
     // 0. Select correcting angle
     float currentAngle = getAngle();
-    int32_t multiply = 0;
-    while(currentAngle >= 2 * PI)
+    //int sign = 1;
+
+    while(currentAngle > 2 * PI)
     {
         currentAngle -= 2 * PI;
-        multiply--;
     }
-    while(currentAngle < 0)
+    while(currentAngle < - 2 * PI)
     {
         currentAngle += 2 * PI;
-        multiply++;
+    }
+
+    if(currentAngle < 0)
+    {
+        currentAngle = -currentAngle;
+    //    sign = -1;
     }
 
     // Select current angle
@@ -697,8 +759,11 @@ void move_refreshAngle(void)
     // Else realAngle = 0 - ready
     
     // 1. Rotate closely to required angle for not to destroy something
-    //move_rotate(2000, 20, realAngle - currentAngle);
-    //while(moveMode > 0);
+    /*move_rotate(2000, 20, realAngle - sign * currentAngle);
+    while(moveMode > 0)
+    {
+        _delay_ms(10);
+    }*/
 
     // 1. Init movement by straight line to back with minimal speed
     move_line((CONFIG_PWM_ACCURACY / 2), 20, -mmToTicks(500));
@@ -732,4 +797,9 @@ void move_refreshAngle(void)
 int move_isBusy(void)
 {
     return moveMode;
+}
+
+void move_free(void)
+{
+    moveMode = 999; // no control
 }
