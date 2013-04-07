@@ -48,6 +48,10 @@ menu "Robot modules"
     config USE_ACTIONS
         bool "Robot actions"
         default "n"
+
+    config USE_ODETECT
+        bool "Opponent detector"
+        default "n"
         
 endmenu
 

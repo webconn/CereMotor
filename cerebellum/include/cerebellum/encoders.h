@@ -21,6 +21,7 @@ encState_t * encoder_get(uint8_t encoder);
 void encoder_reset(uint8_t encoder);
 int32_t encoder_getDelta(uint8_t encoder);
 int32_t encoder_getPath(uint8_t encoder);
+void encoder_setPath(uint8_t encoder, int32_t path);
 
 void encoders_parser(void); // encoder updater, must be running in the timer
 #endif

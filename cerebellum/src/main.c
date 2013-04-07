@@ -8,6 +8,7 @@
 #include <cerebellum/movement.h>
 #include <cerebellum/sensors.h>
 #include <cerebellum/servo.h>
+#include <cerebellum/odetect.h>
 
 #include <stm32f10x.h>
 #include <stm32f10x_usart.h>
@@ -26,24 +27,50 @@ void manualCtl(void);
 volatile uint32_t _delay = 0;
 volatile uint32_t time = 0;
 volatile uint32_t starter = 0;
+volatile uint8_t flag_lock = 0;
 
 void SysTick_Handler(void)
 {
     encoders_parser(); // update encoders values
-
     updateCoords(encoder_getDelta(0), encoder_getDelta(1));
-    move_tick();
+    
+    if(flag_lock > 0 && flag_lock < 10)
+        flag_lock++;
+    // Check ODetect states
+    if(odetect_getDirection(move_getRelativeDirection()))
+    {
+        flag_lock = 1;
+        move_pause();
+        led_on(3);
+    }
+    else if(flag_lock == 10)
+    {
+        flag_lock = 0;
+        move_continue();
+        led_off(3);
+    }
+
+    if(time < 9000)
+        move_tick();
+
     
     if(_delay > 0)
         _delay--;
 
     if(starter == 1)
-        time++;
-    if(time == 9000)
     {
-        move_stop();
+        time++;
+    }
+    if(time == 9000) // stop moving and inflate the baloon
+    {
+        chassis_break(8192, 8192);
+        GPIO_SetBits(GPIOC, GPIO_Pin_2);
+    }
+    if(time == 10000) // baloon ready
+    {
+        GPIO_ResetBits(GPIOC, GPIO_Pin_2);
         manualCtl();
-        while(1);;; // end of the battle
+        while(1);;; // end of battle
     }
 }
 
@@ -64,6 +91,7 @@ static inline void _init_io(void)
     uart_init(1, 115200);
     servo_init();
     sensor_init();
+    odetect_init();
 
     __enable_irq();
 
@@ -79,12 +107,22 @@ sensor_t shmorgalka, field_select, button1, button2; // user interface
 
 static inline void _init_periph(void)
 {
+    // 0. Inflater
+    GPIO_InitTypeDef inflater = {
+        .GPIO_Mode = GPIO_Mode_Out_PP,
+        .GPIO_Speed = GPIO_Speed_50MHz,
+        .GPIO_Pin = GPIO_Pin_2
+    };
+    GPIO_Init(GPIOC, &inflater);
+
     // 1. Servos
     elevator = servo_add(GPIOB, 1);
     bigpaw = servo_add(GPIOC, 5);
     smallpaw = servo_add(GPIOB, 0);
     grip_l = servo_add(GPIOB, 12);
     grip_r = servo_add(GPIOB, 13);
+
+    servo_write(elevator, 894);
 
     // 2. Sensors
     limiter_l.mode = SENSOR_ACTIVE_GND;
@@ -157,7 +195,6 @@ static inline void _init_periph(void)
     paw_move(SMALL, CLOSE);
     grip_set(LEFT, OPEN);
     grip_set(RIGHT, OPEN);
-    elevator_move(DOWN);
 
     // dirty-hack - disable JTAG using registers
     AFIO->MAPR &= ~(7 << 24);
@@ -181,12 +218,15 @@ int main(void)
 
     // Configuring PID
     pidConfig cnf = {
-        .p_gain = 2,
-        .i_rgain = 1000,
-        .d_rgain = 10,
+        .p_gain = 14,
+        .i_rgain = 4000,
+        .d_rgain = 5,
         
         .i_max = 8191,
-        .i_min = -8191
+        .i_min = -8191,
+
+        .i_mem = 0,
+        .d_mem = 0
     };
 
     pid_config(&cnf);
@@ -195,20 +235,7 @@ int main(void)
     led_on(1);
     led_on(2);
     //led_on(3);
-
-    // Manual elevator manipulation
-    // Try to drop elevator
-    /*grip_set(LEFT, HOLD);
-    grip_set(RIGHT, HOLD);
-    elevator_move(UP);
-    elevator_move(DOWN);
-    grip_set(LEFT, UNHOLD);
-    grip_set(RIGHT, UNHOLD);*/
-    // Here we describe cake candles blowing algo
     
-    updateX(mmToTicks(80));
-    updateY(mmToTicks(1400));
-
     while(sensor_read(&shmorgalka));;; // shmorgalka
     starter = 1;
     
@@ -229,7 +256,8 @@ int main(void)
 
 void tactics_red(void)
 {
-
+    move_line(3000, 10, mmToTicks(500));
+    while(move_isBusy());
 }
 
 #define degreesToRadians(dgrs) (dgrs*3.14159/180)
@@ -241,6 +269,10 @@ void tactics_blue(void)
     // Launching from 1st zone
     // 0. Clear angle
     move_refreshAngle();
+
+    // Set coords
+    updateX(mmToTicks(80));
+    updateY(mmToTicks(1400));
 
     // 1. Move forward 10 cm
     move_line(3000, 15, mmToTicks(100));

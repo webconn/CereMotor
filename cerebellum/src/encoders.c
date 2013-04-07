@@ -136,6 +136,15 @@ int32_t encoder_getPath(uint8_t encoder)
         return _rightEncoder.value;
 }
 
+void encoder_setPath(uint8_t encoder, int32_t path)
+{
+    if(encoder)
+        _leftEncoder.value = path;
+    else
+        _rightEncoder.value = path;
+
+}
+
 void encoder_reset(uint8_t encoder)
 {
     if(encoder)

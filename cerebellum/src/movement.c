@@ -4,10 +4,12 @@
 // MinBrakeDelta is a calibrated value
 int32_t MinBrakeDelta = 0;
 int32_t BrakeStart = 0;
+uint8_t relativeDirection = 0; // direction to monitor via ODetect
 
 int moveMode = 0;
 
 extern void _delay_ms(uint32_t ms);
+void _move_clear(void);
 
 int32_t __errno; // for sqrt()
 void move_toPoint(int32_t x, int32_t y, int32_t pwm, int stab)
@@ -100,6 +102,11 @@ inline void _move_stay(void)
     // To save robot's coordinates, we should block motors
     // and save this state
     chassis_break(CONFIG_PWM_ACCURACY, CONFIG_PWM_ACCURACY); // PWM at maximum
+
+    int32_t leftPath = encoder_getPath(1);
+    int32_t rightPath = encoder_getPath(0);
+
+    chassis_write(-4 * leftPath, -4 * rightPath);
 }
 
 int32_t _movePWM, _moveAcc;
@@ -184,7 +191,7 @@ inline void _move_line(void)
         // If we reached end, stop engines and shut algo down
         if(aripPath >= _destPath)
         {
-            moveMode = 0; // stop engines
+            move_stop();
             _movePWM = 0;
             _accPath = 0;
             _midAcc = 0;
@@ -389,7 +396,7 @@ inline void _move_rotate(void)
                 _movePWM = 0;
                 _move_stay();
                 midPath = 0;
-                moveMode = 0;
+                move_stop();
                 flag_CorrectorDirSet = 0;
                 _mdir = 0;
                 return;
@@ -402,7 +409,7 @@ inline void _move_rotate(void)
                 _movePWM = 0;
                 _move_stay();
                 midPath = 0;
-                moveMode = 0;
+                move_stop();
                 flag_CorrectorDirSet = 0;
                 _mdir = 0;
                 return;
@@ -509,7 +516,7 @@ void _move_wall(void)
         // If we reached end, stop engines and shut algo down
         if(aripPath >= _destPath)
         {
-            moveMode = 0; // stop engines
+            move_stop(); // stop engines
             _movePWM = 0;
             _accPath = 0;
             _midAcc = 0;
@@ -583,16 +590,19 @@ void move_line(int32_t pwm, int32_t acceleration, int32_t path)
     // 0. Clear encoder data
     encoder_reset(0);
     encoder_reset(1);
+    _move_clear();
 
     // 1. Set data
     if(path < 0)
     {
         path = -path;
         _moveDirection = 1;
+        relativeDirection = DIR_BACKWARD;
     }
     else
     {
         _moveDirection = 0;
+        relativeDirection = DIR_FORWARD;
     }
 
     _destPWM = pwm;
@@ -617,6 +627,7 @@ void move_rotate(int32_t pwm, int32_t acceleration, float dAngle)
     pid_reset();
     encoder_reset(0);
     encoder_reset(1);
+    _move_clear();
 
     // 1. Set data
     _destPath = (int32_t) (getChassisRadius() * dAngle);
@@ -624,8 +635,12 @@ void move_rotate(int32_t pwm, int32_t acceleration, float dAngle)
     _destPWM = pwm;
     _moveAcc = acceleration;
 
-    if(dAngle > 0) sign = 1;
+    if(dAngle > 0){
+        sign = 1;
+    }
     else sign = 0;
+
+    relativeDirection = DIR_LEFT;
 
     rqAngle = getAngle() + dAngle;
     
@@ -641,6 +656,7 @@ void move_wall(int32_t pwm, int32_t acceleration, int32_t path)
     // 0. Clear encoder data
     encoder_reset(0);
     encoder_reset(1);
+    _move_clear();
 
     // 1. Set data
     _destPWM = pwm;
@@ -651,6 +667,11 @@ void move_wall(int32_t pwm, int32_t acceleration, int32_t path)
     {
         path = -path;
         sign = 1;
+        relativeDirection = DIR_BACKWARD;
+    }
+    else
+    {
+        relativeDirection = DIR_FORWARD;
     }
 
     _destPath = path;
@@ -683,6 +704,7 @@ void _move_clear(void)
     _midAcc = 0;
     sign = 0;
     _numMeasures = 0;
+    relativeDirection = 0;
 }
 
 /**
@@ -691,11 +713,10 @@ void _move_clear(void)
 void move_stop(void)
 {
     // Just stop the engines and clear moveMode
+    encoder_reset(0);
+    encoder_reset(1);
     moveMode = 0;
     _move_stay();
-
-    // Clear all movement parametres
-    _move_clear();
 }
 
 int32_t move_getMidAcc(void)
@@ -703,13 +724,37 @@ int32_t move_getMidAcc(void)
     return _midAcc;
 }
 
+uint8_t move_getRelativeDirection(void)
+{
+    return relativeDirection;
+}
+
 /**
  * Moving pause
  */
 
+struct {
+    uint32_t moveMode;
+    int32_t leftPath;
+    int32_t rightPath;
+    pidConfig pid;   
+} _move_dump;
+
+volatile uint8_t _move_paused = 0;
+
 void move_pause(void)
 {
+    if(!_move_paused)
+    {
+        _move_paused = 1;
+        // 1. Collect required data
+        _move_dump.moveMode = moveMode;
+        _move_dump.leftPath = encoder_getPath(1);
+        _move_dump.rightPath = encoder_getPath(0);
+        _move_dump.pid = pid_dumpData();
 
+        move_stop();
+    }
 }
 
 /**
@@ -718,7 +763,12 @@ void move_pause(void)
 
 void move_continue(void)
 {
-
+    // Turn data back
+    moveMode = _move_dump.moveMode;
+    encoder_setPath(1, _move_dump.leftPath);
+    encoder_setPath(0, _move_dump.rightPath);
+    _move_paused = 0;
+    pid_config(&_move_dump.pid);
 }
 
 /**

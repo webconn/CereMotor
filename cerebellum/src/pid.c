@@ -42,6 +42,7 @@ int32_t pid_getRequiredPWM(int32_t requiredSpeed)
 
 void pid_update(int32_t error, int32_t requiredPWM, int32_t * value1, int32_t * value2)
 {
+    error /= 8;
     // 1. Calculating integral
     _pid.i_mem += error;
 
@@ -88,4 +89,12 @@ void pid_config(pidConfig * data)
 
     _pid.i_min = data->i_min;
     _pid.i_max = data->i_max;
+
+    _pid.i_mem = data->i_mem;
+    _pid.d_mem = data->d_mem;
+}
+
+pidConfig pid_dumpData(void)
+{
+    return _pid;
 }
