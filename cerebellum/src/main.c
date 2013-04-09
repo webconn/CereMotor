@@ -213,14 +213,6 @@ int main(void)
     // 1. Init I/O
     _init_io();
 
-    int i;
-    for(i=0; i<20; i++)
-    {
-        printf("I am at stage %d%c", i, 12);
-    }
-
-    while(1);
-
     // 2. Configuring all sensors, servos etc.
     _init_periph();
 
@@ -262,10 +254,16 @@ int main(void)
     return 0;
 }
 
+void sendInfo(void)
+{
+    printf("P:%05d,%05d; E:%05d,%05d; A:%06f; C:(%05d,%05d)\n\r", (int) move_getPWM(0), (int) move_getPWM(1), (int) encoder_getPath(1), (int) encoder_getPath(0), getAngle(), (int) getX(), (int) getY());
+    uart_send(1, '\n');
+}
+
 void tactics_red(void)
 {
     move_line(3000, 10, mmToTicks(500));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 }
 
 #define degreesToRadians(dgrs) (dgrs*3.14159/180)
@@ -276,7 +274,7 @@ void tactics_blue(void)
 
     // Launching from 1st zone
     // 0. Clear angle
-    move_refreshAngle();
+    //move_refreshAngle();
 
     // Set coords
     updateX(mmToTicks(80));
@@ -284,17 +282,18 @@ void tactics_blue(void)
 
     // 1. Move forward 10 cm
     move_line(3000, 15, mmToTicks(100));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Rotate 15 degrees CCW
     move_rotate(2000, 30, degreesToRadians(19));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Forward 100 cm (we will take two glasses in non-stop mode)
     move_line(2500, 10, mmToTicks(1000));
     _delay_ms(500);
     while(move_isBusy())
     {
+        sendInfo();
         if((encoder_getPath(0) + encoder_getPath(1)) >= mmToTicks(1400)) // if we reached 1st glass
             grip_set(LEFT, HOLD);
     }
@@ -308,11 +307,11 @@ void tactics_blue(void)
     // And set elevator to up
     move_rotate(2000, 30, degreesToRadians(35));
     elevator_move(UP);
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Go forward 27 cm
     move_line(2000, 10, mmToTicks(270));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Grip at right
     grip_set(RIGHT, UNHOLD);
@@ -327,12 +326,12 @@ void tactics_blue(void)
     // Rotate 75 degrees CCW and move up an elevator
     move_rotate(1200, 10, degreesToRadians(68));
     elevator_move(UP);
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Go forward 15 cm
     move_line(2000, 10, mmToTicks(180));
     encoder_reset(0);
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Hold at the right grip
     grip_set(RIGHT, UNHOLD);
@@ -348,11 +347,11 @@ void tactics_blue(void)
     // Rotate CCW 90 degrees
     move_rotate(1200, 10, degreesToRadians(96));
     elevator_move(UP);
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Go forward 13 cm
     move_line(2000, 10, mmToTicks(150));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Take glass into the left grip
     grip_set(LEFT, UNHOLD);
@@ -368,11 +367,11 @@ void tactics_blue(void)
     // Rotate 115 degrees CW
     move_rotate(1200, 10, degreesToRadians(-93));
     elevator_move(UP);
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Forward 15 cm
     move_line(2000, 10, mmToTicks(170));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Unhold left grip
     grip_set(LEFT, UNHOLD);
@@ -387,10 +386,10 @@ void tactics_blue(void)
 
     // Now go to the base
     move_rotate(1500, 20, degreesToRadians(70));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     move_line(4000, 15, mmToTicks(650));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     _delay_ms(300);
 
@@ -401,14 +400,15 @@ void tactics_blue(void)
 
     // Glasses are collected. Now go to the cake
     move_line(4000, 20, -mmToTicks(750));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     move_rotate(3000, 30, degreesToRadians(90));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     move_line(3000, 20, -mmToTicks(900));
     while(move_isBusy())
     {
+        sendInfo();
         // Detect wall
         if(sensor_read(&wall_rear))
         {
@@ -425,6 +425,7 @@ void tactics_blue(void)
     move_wall(2500, 20, -mmToTicks(400));
     while(move_isBusy())
     {
+        sendInfo();
         // detect rear wall
         if(sensor_read(&limiter_l) || sensor_read(&limiter_r))
         {
@@ -450,11 +451,11 @@ void tactics_blue(void)
 
     // 1.1. Go away from the wall
     move_line(4000, 20, mmToTicks(50));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // 2. Rotate CCW to about 15 degrees
     move_rotate(2000, 30, degreesToRadians(18));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // 3. Hit the first candle
     if(candles_top[0] == 0)
@@ -473,7 +474,7 @@ void tactics_blue(void)
     }
 
     move_rotate(2000, 30, -0.261799);
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // 4. Reset the angle again
     move_refreshAngle();
@@ -484,6 +485,7 @@ void tactics_blue(void)
     move_wall(2000, 100, mmToTicks(1850));
     while(move_isBusy())
     {
+        sendInfo();
         int32_t aripPath = (encoder_getPath(1) + encoder_getPath(0)) / 2;
         
         if(aripPath >= candles_top[pos_top])
@@ -512,16 +514,16 @@ void tactics_blue(void)
     // Cake is ready. Now go home
     // First, run around the cake
     move_wall(2500, 20, -mmToTicks(850));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Now go to home coordinate
     // Correct angle
     move_rotate(3000, 20, -getAngle()); // to get 0 angle
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Go back
     move_line(8192, 10, -mmToTicks(1300));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
 }
 
@@ -535,15 +537,15 @@ void tactics_blue_alt(void)
     
     // Start
     move_line(1500, 10, mmToTicks(580));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Rotate right 45 degrees
     move_rotate(3000, 20, -3.14159 / 4);
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Go to first glass
     move_line(1500, 10, mmToTicks(360));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Now first glass is under our right grip
     _delay_ms(500);
@@ -552,11 +554,11 @@ void tactics_blue_alt(void)
     // Go to second glass
     // Rotate left 15 degrees
     move_rotate(3000, 20, 3.14159 / 12);
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Go forward 16 cm
     move_line(1500, 10, mmToTicks(200));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Hold right glass
     _delay_ms(500);
@@ -570,11 +572,11 @@ void tactics_blue_alt(void)
     // Go to next glass
     // ROtate to final position -88 degrees (em... delta = -28)
     move_rotate(3000, 20, -3.14159 * 56 / 180);
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Go forward to third glass, about 14 cm
     move_line(1500, 20, mmToTicks(160));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Unhold right grip
     _delay_ms(500);
@@ -594,11 +596,11 @@ void tactics_blue_alt(void)
 
     // Rotate left at about 70 degrees
     move_rotate(3000, 20, degreesToRadians(60));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Move 18 cm forward
     move_line(1500, 10, mmToTicks(200));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Now fourth glass is under left grip
     _delay_ms(300);
@@ -619,11 +621,11 @@ void tactics_blue_alt(void)
     // Go to 5th glass
     // Rotate 90 degrees CW
     move_rotate(3000, 20, degreesToRadians(-90));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Go forward 20 cm
     move_line(2000, 10, mmToTicks(200));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Now glass is under the left grip
     // Unhold left grip
@@ -645,11 +647,11 @@ void tactics_blue_alt(void)
     // Go to the last glass
     // CW about 70 degrees
     move_rotate(3000, 30, degreesToRadians(-40));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Forward about 20 cm
     move_line(2000, 10, mmToTicks(200));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Now glass is under right grip
     // Unhold right grip
@@ -671,11 +673,11 @@ void tactics_blue_alt(void)
     // Now go to the base to store glasses there
     // 1. Correct angle
     move_rotate(3000, 20, - getAngle() - 3.14159); // to get 0 angle
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // 2. Go to wall
     move_line(6000, 15, mmToTicks(650));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Move glasses down
     elevator_move(DOWN);
@@ -686,10 +688,10 @@ void tactics_blue_alt(void)
 
     // Now go to the cake
     move_line(4000, 15, -mmToTicks(550));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     move_rotate(2000, 30, degreesToRadians(90));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
    
     // Now we are ready to go to the cake
@@ -697,6 +699,7 @@ void tactics_blue_alt(void)
     move_line(4000, 15, -mmToTicks(1200));
     while(move_isBusy())
     {
+        sendInfo();
         // Detect the wall by rear sensor
         if(sensor_read(&wall_rear))
         {
@@ -710,6 +713,7 @@ void tactics_blue_alt(void)
     move_wall(1500, 20, -mmToTicks(200));
     while(move_isBusy())
     {
+        sendInfo();
         // Sense the limiters
         if(sensor_read(&limiter_l) || sensor_read(&limiter_r))
         {
@@ -732,11 +736,11 @@ void tactics_blue_alt(void)
 
     // 1.1. Go away from the wall
     move_line(4000, 20, mmToTicks(40));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // 2. Rotate CCW to about 15 degrees
     move_rotate(2000, 30, 0.261799);
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // 3. Hit the first candle
     if(candles_top[0] == 0)
@@ -755,7 +759,7 @@ void tactics_blue_alt(void)
     }
 
     move_rotate(2000, 30, -0.261799);
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // 4. Reset the angle again
     move_refreshAngle();
@@ -766,6 +770,7 @@ void tactics_blue_alt(void)
     move_wall(2500, 20, mmToTicks(1850));
     while(move_isBusy())
     {
+        sendInfo();
         int32_t aripPath = (encoder_getPath(1) + encoder_getPath(0)) / 2;
         
         if(aripPath >= candles_top[pos_top])
@@ -794,16 +799,16 @@ void tactics_blue_alt(void)
     // Cake is ready. Now go home
     // First, run around the cake
     move_wall(2500, 20, -mmToTicks(850));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Now go to home coordinate
     // Correct angle
     move_rotate(3000, 20, -getAngle()); // to get 0 angle
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     // Go back
     move_line(8192, 10, -mmToTicks(1300));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
     // That's all, guys!
 }
 

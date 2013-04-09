@@ -117,6 +117,7 @@ int32_t _midAcc = 0;
 int32_t sign = 0;
 int32_t _numMeasures = 0;
 int32_t _moveDirection = 0; // 0 for forward, 1 for backward
+float startAngle = 0;
 
 int32_t leftPWM, rightPWM;
 
@@ -130,6 +131,8 @@ inline void _move_line(void)
 
     int32_t leftSpeed = encoder_getDelta(1);
     int32_t rightSpeed = encoder_getDelta(0);
+    
+    float angle = getAngle();
 
     if(_moveDirection)
     {
@@ -200,7 +203,9 @@ inline void _move_line(void)
     }
 
     // Stabilisation by encoders path
-    int32_t error = pid_calculateLinError(rightPath, leftPath);
+    //int32_t error = pid_calculateLinError(rightPath, leftPath);
+
+    int32_t error = (int32_t) 17000 * (angle - startAngle);
 
     // 3. Updating PID data (PWM overload calculated in this function)
     pid_update(error, _movePWM, &leftPWM, &rightPWM);
@@ -601,6 +606,7 @@ void move_line(int32_t pwm, int32_t acceleration, int32_t path)
     _destPWM = pwm;
     _moveAcc = acceleration;
     _destPath = path;
+    startAngle = getAngle();
 
     // 2. Reset PID data
     pid_reset();
