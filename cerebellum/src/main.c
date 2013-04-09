@@ -213,6 +213,14 @@ int main(void)
     // 1. Init I/O
     _init_io();
 
+    int i;
+    for(i=0; i<20; i++)
+    {
+        printf("I am at stage %d%c", i, 12);
+    }
+
+    while(1);
+
     // 2. Configuring all sensors, servos etc.
     _init_periph();
 

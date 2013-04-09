@@ -4,6 +4,7 @@
 #include <stm32f10x.h>
 #include <cerebellum/servo.h>
 #include <cerebellum/sensors.h>
+#include <cerebellum/movement.h>
 
 /**
  * Paw states
@@ -45,6 +46,8 @@ void actions_init(servo bpaw, servo spaw, servo elev, servo gl, servo gr, sensor
 
 void paw_move(uint16_t paw, uint16_t state);
 void elevator_move(uint16_t state);
+int elevator_moveCareful(uint16_t state);
 void grip_set(uint16_t grip, uint16_t state);
+void take_glass(uint16_t side, uint16_t elevator_state);
 
 #endif

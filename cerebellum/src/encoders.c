@@ -22,8 +22,6 @@ void encoders_init(void)
      * configuring RCC, GPIO and counters
      */
 
-
-
     /*
      * Configure RCC
      */
@@ -109,7 +107,6 @@ void encoders_parser(void)
     // Update encoders structures
     _leftEncoder.value += _leftEncoder.delta;
     _rightEncoder.value += _rightEncoder.delta;
-
 }
 
 encState_t * encoder_get(uint8_t encoder)
@@ -142,7 +139,6 @@ void encoder_setPath(uint8_t encoder, int32_t path)
         _leftEncoder.value = path;
     else
         _rightEncoder.value = path;
-
 }
 
 void encoder_reset(uint8_t encoder)

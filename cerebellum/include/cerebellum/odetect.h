@@ -14,5 +14,6 @@
 void odetect_init(void);
 int odetect_getDirection(int direction);
 uint8_t odetect_getRaw(void);
+void odetect_switch(FunctionalState state);
 
 #endif

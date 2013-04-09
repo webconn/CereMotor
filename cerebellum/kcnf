@@ -313,6 +313,14 @@ if USE_UART
 
 endif
 
+menu "Robot manupulators config"
+
+    config ELEVATOR_FAIL_TIME
+    int "Elevator max time"
+    default 1000
+
+endmenu
+
 choice
     prompt "Robot config set"
     

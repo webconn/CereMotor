@@ -186,7 +186,6 @@ inline void _move_line(void)
         // At this stage we need to control encoders speed
         if(leftSpeed > 5 && rightSpeed > 5 && acceleration >= -_midAcc) // speed down while we should move
             _movePWM -= _moveAcc;
-
         
         // If we reached end, stop engines and shut algo down
         if(aripPath >= _destPath)
@@ -205,15 +204,6 @@ inline void _move_line(void)
 
     // 3. Updating PID data (PWM overload calculated in this function)
     pid_update(error, _movePWM, &leftPWM, &rightPWM);
-
-    if(leftPWM > CONFIG_PWM_ACCURACY)
-        leftPWM = CONFIG_PWM_ACCURACY;
-    if(leftPWM < -CONFIG_PWM_ACCURACY)
-        leftPWM = -CONFIG_PWM_ACCURACY;
-    if(rightPWM > CONFIG_PWM_ACCURACY)
-        rightPWM = CONFIG_PWM_ACCURACY;
-    if(rightPWM < -CONFIG_PWM_ACCURACY)
-        rightPWM = -CONFIG_PWM_ACCURACY;
 
     // 4. Write data to chassis
     if(_moveDirection)
@@ -584,6 +574,9 @@ int32_t move_getPWM(uint8_t val)
  */
 void move_line(int32_t pwm, int32_t acceleration, int32_t path)
 {
+    if(path == 0)
+        return; // no movement is required
+
     // To go by line, we need to run PID algorithm
     // stabilising paths or angle
     
@@ -653,6 +646,8 @@ void move_rotate(int32_t pwm, int32_t acceleration, float dAngle)
  */
 void move_wall(int32_t pwm, int32_t acceleration, int32_t path)
 {
+    if(path == 0)
+        return; // no movement is required
     // 0. Clear encoder data
     encoder_reset(0);
     encoder_reset(1);

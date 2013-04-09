@@ -1,6 +1,7 @@
 #include <cerebellum/odetect.h>
 
 volatile uint8_t odetect_data = 0;
+volatile uint8_t odetect_state = 1;
 
 void odetect_init(void)
 {
@@ -26,9 +27,20 @@ void odetect_init(void)
     DMA_Cmd(DMA1_Channel3, ENABLE);
 }
 
+void odetect_switch(FunctionalState state)
+{
+    if(state == ENABLE)
+        odetect_state = 1;
+    else
+        odetect_state = 0;
+}
+
 int odetect_getDirection(int direction)
 {
-    return (odetect_data & direction);
+    if(odetect_state)
+        return (odetect_data & direction);
+    else
+        return 0;// no brakes are required
 }
 
 uint8_t odetect_getRaw(void)
