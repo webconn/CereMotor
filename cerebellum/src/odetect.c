@@ -38,7 +38,7 @@ void odetect_switch(FunctionalState state)
 int odetect_getDirection(int direction)
 {
     if(odetect_state)
-        return (odetect_data & direction);
+        return (odetect_data & direction) > 0;
     else
         return 0;// no brakes are required
 }

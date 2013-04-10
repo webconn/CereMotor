@@ -31,6 +31,7 @@ volatile uint8_t flag_lock = 0;
 
 void SysTick_Handler(void)
 {
+    led_on(2);
     encoders_parser(); // update encoders values
     updateCoords(encoder_getDelta(0), encoder_getDelta(1));
     
@@ -66,12 +67,13 @@ void SysTick_Handler(void)
         chassis_break(8192, 8192);
         GPIO_SetBits(GPIOC, GPIO_Pin_2);
     }
-    if(time == 10000) // baloon ready
+    if(time == 9700) // baloon ready
     {
         GPIO_ResetBits(GPIOC, GPIO_Pin_2);
         manualCtl();
         while(1);;; // end of battle
     }
+    led_off(2);
 }
 
 void _delay_ms(uint32_t time)
@@ -218,9 +220,9 @@ int main(void)
 
     // Configuring PID
     pidConfig cnf = {
-        .p_gain = 14,
-        .i_rgain = 4000,
-        .d_rgain = 5,
+        .p_gain = 17,
+        .i_rgain = 5000,
+        .d_rgain = 10,
         
         .i_max = 8191,
         .i_min = -8191,
@@ -233,11 +235,12 @@ int main(void)
 
     // Turning on LED - end of initialisation
     led_on(1);
-    led_on(2);
+    //led_on(2);
     //led_on(3);
-    
+
     while(sensor_read(&shmorgalka));;; // shmorgalka
     starter = 1;
+    move_saveSwitch(DISABLE);
     
     // Select tactics switch
     if(sensor_read(&field_select))
@@ -256,26 +259,269 @@ int main(void)
 
 void sendInfo(void)
 {
-    printf("P:%05d,%05d; E:%05d,%05d; A:%06f; C:(%05d,%05d)\n\r", (int) move_getPWM(0), (int) move_getPWM(1), (int) encoder_getPath(1), (int) encoder_getPath(0), getAngle(), (int) getX(), (int) getY());
+    printf("P:%05ld,%05ld; E:%05ld,%05ld; A:%06f; C:(%05ld,%05ld)\n\r", move_getPWM(0), move_getPWM(1), encoder_getPath(1), encoder_getPath(0), getAngle(), getX(), getY());
     uart_send(1, '\n');
 }
 
+#define degreesToRadians(dgrs) (dgrs*3.14159/180)
 void tactics_red(void)
 {
-    move_line(3000, 10, mmToTicks(500));
-    while(move_isBusy()) sendInfo();
-}
-
-#define degreesToRadians(dgrs) (dgrs*3.14159/180)
-
-void tactics_blue(void)
-{
-    _delay_ms(5000); // while younger brother starts
+    //_delay_ms(3000); // while younger brother starts
 
     // Launching from 1st zone
     // 0. Clear angle
     //move_refreshAngle();
+    
+    // Set coords
+    updateX(mmToTicks(2920));
+    updateY(mmToTicks(250));
+    updateAngle(degreesToRadians(180));
 
+    // 1. Move forward 10 cm
+    /*while(1)
+    {
+    move_line(1000, 10, mmToTicks(130));
+    while(move_isBusy()) sendInfo();
+    _delay_ms(300);
+    move_refreshAngle();
+    }*/
+
+    
+    move_line(1500, 10, mmToTicks(130));
+    while(move_isBusy()) sendInfo();
+    _delay_ms(300);
+
+    move_rotateAbsolute(2000, 30, degreesToRadians(180));
+    while(move_isBusy()) sendInfo();
+
+    // Rotate 15 degrees CCW
+    move_rotate(2000, 30, -degreesToRadians(19));
+    while(move_isBusy()) sendInfo();
+
+    // Forward 100 cm (we will take two glasses in non-stop mode)
+    move_line(2500, 10, mmToTicks(1000));
+    while(move_isBusy())
+    {
+        sendInfo();
+        //if((encoder_getPath(0) + encoder_getPath(1)) >= mmToTicks(1400)) // if we reached 1st glass
+            //grip_set(RIGHT, HOLD);
+    }
+
+    grip_set(RIGHT, HOLD);
+    grip_set(LEFT, HOLD);
+    _delay_ms(300);
+    
+    // Now we have one glass in left and one in right
+
+    // Rotate CCW 30 degrees
+    // And set elevator to up
+    move_rotate(2000, 30, -degreesToRadians(38));
+    elevator_move(UP);
+    while(move_isBusy()) sendInfo();
+
+    // Go forward 27 cm
+    move_line(2000, 10, mmToTicks(270));
+    while(move_isBusy()) sendInfo();
+
+    // Grip at right/
+    grip_set(LEFT, UNHOLD);
+    _delay_ms(300);
+    elevator_move(DOWN);
+    grip_set(RIGHT, UNHOLD);
+    _delay_ms(500);
+    grip_set(RIGHT, HOLD);
+    grip_set(LEFT, HOLD);
+    _delay_ms(300);
+
+    // Rotate 75 degrees CCW and move up an elevator
+    move_rotate(1200, 10, -degreesToRadians(68));
+    elevator_move(UP);
+    while(move_isBusy()) sendInfo();
+
+    // Go forward 15 cm
+    move_line(2000, 10, mmToTicks(180));
+    encoder_reset(0);
+    while(move_isBusy()) sendInfo();
+
+    // Hold at the right grip
+    grip_set(LEFT, UNHOLD);
+    _delay_ms(300);
+    elevator_move(DOWN);
+    _delay_ms(300);
+    grip_set(RIGHT, UNHOLD);
+    _delay_ms(500);
+    grip_set(RIGHT, HOLD);
+    grip_set(LEFT, HOLD);
+    _delay_ms(300);
+
+    // Rotate CCW 90 degrees
+    move_rotate(1200, 10, -degreesToRadians(92));
+    elevator_move(UP);
+    while(move_isBusy()) sendInfo();
+
+    // Go forward 13 cm
+    move_line(2000, 10, mmToTicks(150));
+    while(move_isBusy()) sendInfo();
+
+    // Take glass into the left grip
+    grip_set(RIGHT, UNHOLD);
+    _delay_ms(300);
+    elevator_move(DOWN);
+    _delay_ms(300);
+    grip_set(LEFT,UNHOLD);
+    _delay_ms(500);
+    grip_set(LEFT, HOLD);
+    grip_set(RIGHT, HOLD);
+    _delay_ms(300);
+
+    // Rotate 115 degrees CW
+    move_rotate(1200, 10, degreesToRadians(100));
+    elevator_move(UP);
+    while(move_isBusy()) sendInfo();
+
+    // Forward 15 cm
+    move_line(2000, 10, mmToTicks(240));
+    while(move_isBusy()) sendInfo();
+
+    // Unhold left grip
+    grip_set(RIGHT, UNHOLD);
+    _delay_ms(300);
+    elevator_move(DOWN);
+    _delay_ms(300);
+    grip_set(LEFT, UNHOLD);
+    _delay_ms(500);
+    grip_set(LEFT, HOLD);
+    grip_set(RIGHT, HOLD);
+    _delay_ms(300);
+
+    // Now go to the base
+    move_rotateAbsolute(2000, 30, 0);
+    while(move_isBusy()) sendInfo();
+
+    move_line(4000, 15, mmToTicks(600));
+    while(move_isBusy()) sendInfo();
+
+    _delay_ms(300);
+
+    grip_set(RIGHT, OPEN);
+    grip_set(LEFT, OPEN);
+
+    // Go to the ekac!
+    // Go to point (1500, 800)
+    paw_move(BIG, OPEN);
+
+    move_line(2000, 15, -mmToTicks(450));
+    while(move_isBusy());
+
+    move_rotateAbsolute(2000, 30, -degreesToRadians(18));
+    while(move_isBusy());
+
+    move_line(5000, 20, -mmToTicks(1000));
+    while(move_isBusy());
+
+    move_line(2000, 20, -mmToTicks(400));
+    while(move_isBusy())
+    {
+        if(sensor_read(&wall_rear))
+            break;
+    }
+    
+    move_wall(3000, 20, -mmToTicks(1500));
+    while(move_isBusy())
+    {
+        if(sensor_read(&limiter_r) || sensor_read(&limiter_l))
+            move_stop();
+    }
+
+    int32_t pos_top = 0, pos_bottom = 0;
+    int32_t flag_blow = 0;
+    int32_t candles_top[] = {0, mmToTicks(2*260), mmToTicks(4*264.3), mmToTicks(6*264.3)};
+    int32_t candles_bottom[] = {10, mmToTicks(3*175), mmToTicks(4*180), mmToTicks(5*190), mmToTicks(6*180), mmToTicks(7*180), mmToTicks(9*180), mmToTicks(10*183)};
+
+
+    // To hit the candles:
+    // 1. Clear angle (by crashing the wall)
+    move_refreshAngle();
+
+    // 1.1. Go away from the wall
+    move_line(4000, 20, mmToTicks(50));
+    while(move_isBusy()) sendInfo();
+
+    // 2. Rotate CCW to about 15 degrees
+    move_rotate(2000, 30, degreesToRadians(18));
+    while(move_isBusy()) sendInfo();
+
+    // 3. Hit the first candle
+    if(candles_top[0] == 0)
+    {
+        pos_top = 1;
+        paw_move(BIG, BLOW);
+        _delay_ms(500);
+        paw_move(BIG, OPEN);
+    }
+    if(candles_bottom[0] == 0)
+    {
+        pos_bottom = 1;
+        paw_move(SMALL, BLOW);
+        _delay_ms(500);
+        paw_move(SMALL, OPEN);
+    }
+
+    move_rotate(2000, 30, -0.261799);
+    while(move_isBusy()) sendInfo();
+
+    // 4. Reset the angle again
+    move_refreshAngle();
+    
+    // 3. Move by cake and hit the candles from the list!
+    move_wall(2000, 100, mmToTicks(1850));
+    while(move_isBusy())
+    {
+        sendInfo();
+        int32_t aripPath = (encoder_getPath(1) + encoder_getPath(0)) / 2;
+        
+        if(aripPath >= candles_top[pos_top])
+        {
+            pos_top++;
+            paw_move(BIG, BLOW);
+            flag_blow = 1;
+        }
+
+        if(aripPath >= candles_bottom[pos_bottom])
+        {
+            pos_bottom++;
+            paw_move(SMALL, BLOW);
+            flag_blow = 1;
+        }
+
+        if(flag_blow)
+        {
+            flag_blow = 0;
+            _delay_ms(500);
+            paw_move(BIG, OPEN);
+            paw_move(SMALL, OPEN);
+        }
+    }
+
+    // Cake is ready. Now go home
+    // First, run around the cake
+    move_wall(2500, 20, -mmToTicks(850));
+    while(move_isBusy()) sendInfo();
+
+}
+
+
+void tactics_blue(void)
+{
+    //_delay_ms(5000); // while younger brother starts
+
+    // Launching from 1st zone
+    // 0. Clear angle
+    move_refreshAngle();
+
+    /*move_line(2000, 20, mmToTicks(500));
+    while(move_isBusy()) sendInfo();
+    while(1);;;*/
     // Set coords
     updateX(mmToTicks(80));
     updateY(mmToTicks(1400));
@@ -290,14 +536,14 @@ void tactics_blue(void)
 
     // Forward 100 cm (we will take two glasses in non-stop mode)
     move_line(2500, 10, mmToTicks(1000));
-    _delay_ms(500);
     while(move_isBusy())
     {
         sendInfo();
-        if((encoder_getPath(0) + encoder_getPath(1)) >= mmToTicks(1400)) // if we reached 1st glass
-            grip_set(LEFT, HOLD);
+        //if((encoder_getPath(0) + encoder_getPath(1)) >= mmToTicks(1400)) // if we reached 1st glass
+            //grip_set(LEFT, HOLD);
     }
 
+    grip_set(LEFT, HOLD);
     grip_set(RIGHT, HOLD);
     _delay_ms(300);
     
@@ -314,14 +560,7 @@ void tactics_blue(void)
     while(move_isBusy()) sendInfo();
 
     // Grip at right
-    grip_set(RIGHT, UNHOLD);
-    _delay_ms(300);
-    elevator_move(DOWN);
-    grip_set(LEFT, UNHOLD);
-    _delay_ms(500);
-    grip_set(LEFT, HOLD);
-    grip_set(RIGHT, HOLD);
-    _delay_ms(300);
+    take_glass(RIGHT, DOWN);
 
     // Rotate 75 degrees CCW and move up an elevator
     move_rotate(1200, 10, degreesToRadians(68));
@@ -524,7 +763,6 @@ void tactics_blue(void)
     // Go back
     move_line(8192, 10, -mmToTicks(1300));
     while(move_isBusy()) sendInfo();
-
 }
 
 void tactics_blue_alt(void)
@@ -822,10 +1060,10 @@ void manualCtl(void)
         switch(byte)
         {
             case 'w':
-                chassis_write(4096, 4096);
+                chassis_write(2000, 2000);
                 break;
             case 's':
-                chassis_write(-4096, -4096);
+                chassis_write(-2000, -2000);
                 break;
             case 'a':
                 chassis_write(-1000, 1000);
@@ -835,6 +1073,35 @@ void manualCtl(void)
                 break;
             case ' ':
                 chassis_write(0, 0);
+                break;
+            case 'i':
+                GPIO_SetBits(GPIOC, GPIO_Pin_2);
+                _delay_ms(7000);
+                GPIO_ResetBits(GPIOC, GPIO_Pin_2);
+                break;
+            case 'y':
+                grip_set(LEFT, OPEN);
+                break;
+            case 'h':
+                grip_set(LEFT, UNHOLD);
+                break;
+            case 'n':
+                grip_set(LEFT, HOLD);
+                break;
+            case 'u':
+                grip_set(RIGHT, OPEN);
+                break;
+            case 'j':
+                grip_set(RIGHT, UNHOLD);
+                break;
+            case 'm':
+                grip_set(RIGHT, HOLD);
+                break;
+            case 'g':
+                elevator_move(UP);
+                break;
+            case 'b':
+                elevator_move(DOWN);
                 break;
             case 'r':
                 NVIC_SystemReset();

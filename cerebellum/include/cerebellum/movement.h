@@ -25,13 +25,16 @@ void move_initWallSensor(sensor_t * rf_front, sensor_t * rf_rear);
 void move_tick(void);
 void move_line(int32_t pwm, int32_t acceleration, int32_t path);
 void move_rotate(int32_t path, int32_t acceleration, float angle);
+void move_rotateAbsolute(int32_t path, int32_t acceleration, float angle);
 void move_refreshAngle(void);
 void move_wall(int32_t pwm, int32_t acceleration, int32_t path);
 void move_toPoint(int32_t x, int32_t y, int32_t pwm, int stab);
+void move_toPointBackward(int32_t x, int32_t y, int32_t pwm, int stab);
 void move_stop(void);
 void move_pause(void);
 void move_continue(void);
 
+void move_saveSwitch(FunctionalState state);
 int32_t move_getPWM(uint8_t val);
 int move_isBusy(void);
 uint8_t move_getRelativeDirection(void);

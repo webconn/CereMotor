@@ -3,6 +3,8 @@
 servo _bigpaw, _smallpaw, _elevator, _grip_l, _grip_r;
 sensor_t * _limiter_h, * _limiter_l;
 
+int elevator_state = DOWN;
+
 void actions_init(servo bpaw, servo spaw, servo elev, servo gl, servo gr, sensor_t * limit_h, sensor_t * limit_l)
 {
     _bigpaw = bpaw;
@@ -50,45 +52,51 @@ void paw_move(uint16_t paw, uint16_t state)
 
 int elevator_moveCareful(uint16_t state)
 {
-    if(state == UP)
+    if(state == UP && elevator_state == DOWN)
     {
-        servo_write(_elevator, 700); // rotate servo to top
+        elevator_state = UP;
+        servo_write(_elevator, 660); // rotate servo to top
         while(!sensor_read(_limiter_h));
         servo_write(_elevator, 870); // stop elevator
     }
-    else // state == DOWN
+    else if(elevator_state == UP) // state == DOWN
     {
         // Here is something interesting
         // We should measure a time to down elevator
         // If it is locked (timer overflow), return fail statement
-        servo_write(_elevator, 925); // rotate servo to bottom
+        servo_write(_elevator, 940); // rotate servo to bottom
+        extern void _delay_ms(uint32_t t);
+        _delay_ms(100);
+
         uint32_t time = 0;
         while(!sensor_read(_limiter_l))
         {
-            extern void _delay_ms(uint32_t t);
             _delay_ms(10);
             time++;
-            if(time == CONFIG_ELEVATOR_FAIL_TIME || sensor_read(_limiter_h)) // if time is over or elevator moved up
+            if(time == CONFIG_ELEVATOR_FAIL_TIME - 60 || sensor_read(_limiter_h)) // if time is over or elevator moved up
             {
                 servo_write(_elevator, 894); // stop elevator
                 return 0; // fail
             }
         }
         servo_write(_elevator, 894); // lock servo engine
+        elevator_state = DOWN;
     }
     return 1;
 }
 
 void elevator_move(uint16_t state)
 {
-    if(state == UP)
+    if(state == UP && elevator_state == DOWN)
     {
+        elevator_state = UP;
         servo_write(_elevator, 700); // rotate servo to top
         while(!sensor_read(_limiter_h));
         servo_write(_elevator, 870); // stop elevator
     }
-    else // state == DOWN
+    else if(elevator_state == UP) // state == DOWN
     {
+        elevator_state = DOWN;
         servo_write(_elevator, 925); // rotate servo to bottom
         while(!sensor_read(_limiter_l));
         servo_write(_elevator, 894); // lock servo engine
@@ -142,7 +150,7 @@ void take_glass(uint16_t side, uint16_t elevator_state)
         //_delay_ms(300);
         elevator_move(UP); // error var is optional, but required by GCC
         path += mmToTicks(50);
-        move_line(2000, 10, mmToTicks(50));
+        move_line(2000, 30, mmToTicks(50));
         while(move_isBusy());
         _delay_ms(300);
         //grip_set(side, UNHOLD);
@@ -153,7 +161,7 @@ void take_glass(uint16_t side, uint16_t elevator_state)
     grip_set(side, HOLD); // take a glass
     _delay_ms(300);
 
-    move_line(2000, 10, -path); // go to the start position
+    move_line(2000, 30, -path); // go to the start position
     if(elevator_state == UP)
         elevator_move(UP);
     while(move_isBusy());
