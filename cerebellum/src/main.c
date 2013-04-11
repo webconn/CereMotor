@@ -220,9 +220,9 @@ int main(void)
 
     // Configuring PID
     pidConfig cnf = {
-        .p_gain = 17,
-        .i_rgain = 5000,
-        .d_rgain = 10,
+        .p_gain = 7,
+        .i_rgain = 1000,
+        .d_rgain = 5,
         
         .i_max = 8191,
         .i_min = -8191,
@@ -259,18 +259,18 @@ int main(void)
 
 void sendInfo(void)
 {
-    printf("P:%05ld,%05ld; E:%05ld,%05ld; A:%06f; C:(%05ld,%05ld)\n\r", move_getPWM(0), move_getPWM(1), encoder_getPath(1), encoder_getPath(0), getAngle(), getX(), getY());
+    printf("M:%d;P:%05ld,%05ld;E:%05ld,%05ld;A:%06f;C:%05ld,%05ld\n\r", move_isBusy(), move_getPWM(0), move_getPWM(1), encoder_getPath(1), encoder_getPath(0), getAngle(), getX(), getY());
     uart_send(1, '\n');
 }
 
 #define degreesToRadians(dgrs) (dgrs*3.14159/180)
 void tactics_red(void)
 {
-    //_delay_ms(3000); // while younger brother starts
+    _delay_ms(5000); // while younger brother starts
 
     // Launching from 1st zone
     // 0. Clear angle
-    //move_refreshAngle();
+    move_refreshAngle();
     
     // Set coords
     updateX(mmToTicks(2920));
@@ -278,16 +278,8 @@ void tactics_red(void)
     updateAngle(degreesToRadians(180));
 
     // 1. Move forward 10 cm
-    /*while(1)
-    {
-    move_line(1000, 10, mmToTicks(130));
-    while(move_isBusy()) sendInfo();
-    _delay_ms(300);
-    move_refreshAngle();
-    }*/
 
-    
-    move_line(1500, 10, mmToTicks(130));
+    move_line(2000, 10, mmToTicks(130));
     while(move_isBusy()) sendInfo();
     _delay_ms(300);
 
@@ -303,8 +295,6 @@ void tactics_red(void)
     while(move_isBusy())
     {
         sendInfo();
-        //if((encoder_getPath(0) + encoder_getPath(1)) >= mmToTicks(1400)) // if we reached 1st glass
-            //grip_set(RIGHT, HOLD);
     }
 
     grip_set(RIGHT, HOLD);
@@ -324,14 +314,7 @@ void tactics_red(void)
     while(move_isBusy()) sendInfo();
 
     // Grip at right/
-    grip_set(LEFT, UNHOLD);
-    _delay_ms(300);
-    elevator_move(DOWN);
-    grip_set(RIGHT, UNHOLD);
-    _delay_ms(500);
-    grip_set(RIGHT, HOLD);
-    grip_set(LEFT, HOLD);
-    _delay_ms(300);
+    take_glass(LEFT, DOWN);
 
     // Rotate 75 degrees CCW and move up an elevator
     move_rotate(1200, 10, -degreesToRadians(68));
@@ -344,15 +327,7 @@ void tactics_red(void)
     while(move_isBusy()) sendInfo();
 
     // Hold at the right grip
-    grip_set(LEFT, UNHOLD);
-    _delay_ms(300);
-    elevator_move(DOWN);
-    _delay_ms(300);
-    grip_set(RIGHT, UNHOLD);
-    _delay_ms(500);
-    grip_set(RIGHT, HOLD);
-    grip_set(LEFT, HOLD);
-    _delay_ms(300);
+    take_glass(LEFT, DOWN);
 
     // Rotate CCW 90 degrees
     move_rotate(1200, 10, -degreesToRadians(92));
@@ -364,15 +339,7 @@ void tactics_red(void)
     while(move_isBusy()) sendInfo();
 
     // Take glass into the left grip
-    grip_set(RIGHT, UNHOLD);
-    _delay_ms(300);
-    elevator_move(DOWN);
-    _delay_ms(300);
-    grip_set(LEFT,UNHOLD);
-    _delay_ms(500);
-    grip_set(LEFT, HOLD);
-    grip_set(RIGHT, HOLD);
-    _delay_ms(300);
+    take_glass(RIGHT, DOWN);
 
     // Rotate 115 degrees CW
     move_rotate(1200, 10, degreesToRadians(100));
@@ -384,15 +351,7 @@ void tactics_red(void)
     while(move_isBusy()) sendInfo();
 
     // Unhold left grip
-    grip_set(RIGHT, UNHOLD);
-    _delay_ms(300);
-    elevator_move(DOWN);
-    _delay_ms(300);
-    grip_set(LEFT, UNHOLD);
-    _delay_ms(500);
-    grip_set(LEFT, HOLD);
-    grip_set(RIGHT, HOLD);
-    _delay_ms(300);
+    take_glass(RIGHT, DOWN);
 
     // Now go to the base
     move_rotateAbsolute(2000, 30, 0);
@@ -410,13 +369,17 @@ void tactics_red(void)
     // Go to point (1500, 800)
     paw_move(BIG, OPEN);
 
+    odetect_switch(DISABLE);
+
     move_line(2000, 15, -mmToTicks(450));
     while(move_isBusy());
 
-    move_rotateAbsolute(2000, 30, -degreesToRadians(18));
+    move_rotateAbsolute(2000, 30, -degreesToRadians(19));
     while(move_isBusy());
 
-    move_line(5000, 20, -mmToTicks(1000));
+    odetect_switch(ENABLE);
+
+    move_line(5000, 20, -mmToTicks(950));
     while(move_isBusy());
 
     move_line(2000, 20, -mmToTicks(400));
@@ -435,44 +398,14 @@ void tactics_red(void)
 
     int32_t pos_top = 0, pos_bottom = 0;
     int32_t flag_blow = 0;
-    int32_t candles_top[] = {0, mmToTicks(2*260), mmToTicks(4*264.3), mmToTicks(6*264.3)};
-    int32_t candles_bottom[] = {10, mmToTicks(3*175), mmToTicks(4*180), mmToTicks(5*190), mmToTicks(6*180), mmToTicks(7*180), mmToTicks(9*180), mmToTicks(10*183)};
+    int32_t candles_top[] = {mmToTicks(260), mmToTicks(3*260), mmToTicks(5*264.3), mmToTicks(1840)};
+    int32_t candles_bottom[] = {mmToTicks(175), mmToTicks(2*180), mmToTicks(4*180), mmToTicks(5*190), mmToTicks(6*180), mmToTicks(7*180), mmToTicks(8*180), mmToTicks(11*175)};
 
 
     // To hit the candles:
     // 1. Clear angle (by crashing the wall)
     move_refreshAngle();
 
-    // 1.1. Go away from the wall
-    move_line(4000, 20, mmToTicks(50));
-    while(move_isBusy()) sendInfo();
-
-    // 2. Rotate CCW to about 15 degrees
-    move_rotate(2000, 30, degreesToRadians(18));
-    while(move_isBusy()) sendInfo();
-
-    // 3. Hit the first candle
-    if(candles_top[0] == 0)
-    {
-        pos_top = 1;
-        paw_move(BIG, BLOW);
-        _delay_ms(500);
-        paw_move(BIG, OPEN);
-    }
-    if(candles_bottom[0] == 0)
-    {
-        pos_bottom = 1;
-        paw_move(SMALL, BLOW);
-        _delay_ms(500);
-        paw_move(SMALL, OPEN);
-    }
-
-    move_rotate(2000, 30, -0.261799);
-    while(move_isBusy()) sendInfo();
-
-    // 4. Reset the angle again
-    move_refreshAngle();
-    
     // 3. Move by cake and hit the candles from the list!
     move_wall(2000, 100, mmToTicks(1850));
     while(move_isBusy())

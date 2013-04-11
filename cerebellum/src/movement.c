@@ -149,7 +149,7 @@ inline void _move_stay(void)
         int32_t leftPath = encoder_getPath(1);
         int32_t rightPath = encoder_getPath(0);
 
-        chassis_write(-4 * leftPath, -4 * rightPath);
+        chassis_write(-16 * leftPath, -16 * rightPath);
     }
 }
 
@@ -254,24 +254,24 @@ inline void _move_line(void)
         if((angle > 0 && angle < 0.01) || (angle < 0 && angle > -0.01))
         {
             if(_movePWM <= 1000)
-                error = (int32_t) 10000 * angle;
+                error = (int32_t) 22000 * angle;
             else if(_movePWM <= 2000)
-                error = (int32_t) 11000 * angle;
+                error = (int32_t) 20000 * angle;
             else if(_movePWM <= 2500)
-                error = (int32_t) 13000 * angle;
+                error = (int32_t) 36000 * angle;
             else
-                error = (int32_t) 18000 * angle;
+                error = (int32_t) 40000 * angle;
         }
         else
         {
             if(_movePWM <= 1000)
-                error = (int32_t) 12000 * angle;
+                error = (int32_t) 24000 * angle;
             else if(_movePWM <= 2000)
-                error = (int32_t) 13000 * angle;
+                error = (int32_t) 24000 * angle;
             else if(_movePWM <= 2500)
-                error = (int32_t) 15000 * angle;
+                error = (int32_t) 40000 * angle;
             else
-                error = (int32_t) 19000 * angle;
+                error = (int32_t) 44000 * angle;
     }
 
     if(_moveDirection)
@@ -674,7 +674,7 @@ void move_line(int32_t pwm, int32_t acceleration, int32_t path)
     }
 
     if(path < mmToTicks(150))
-        stabMode = 1;
+        stabMode = 0;
     else
         stabMode = 0;
 

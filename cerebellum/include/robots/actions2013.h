@@ -24,6 +24,7 @@
  */
 #define UP 1
 #define DOWN 2
+#define FAIL 3
 
 /**
  * Grips
