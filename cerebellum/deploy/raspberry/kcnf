@@ -1,0 +1,19 @@
+menuconfig DEPLOY_RASPBERRY
+bool "raspberry"
+depends on MCU_STM32
+
+if DEPLOY_RASPBERRY
+
+  config DEPLOY_RASPBERRY_IP
+  string "Robot address"
+  default "raspberry"
+
+  config DEPLOY_RASPBERRY_USER
+  string "Linux user"
+  default "root"
+
+  config DEPLOY_RASPBERRY_PATH
+  string "Image path"
+  default "/home/pi/DIMRobotics"
+
+endif

@@ -1,5 +1,6 @@
 #include <cerebellum/movement.h>
 #include <stdio.h>
+#include <cerebellum/points.h>
 
 // MinBrakeDelta is a calibrated value
 int32_t MinBrakeDelta = 0;
@@ -735,14 +736,14 @@ void move_rotateAbsolute(int32_t pwm, int32_t acceleration, float dAngle)
 
     // 1. Set data
     _destPath = (int32_t) (getChassisRadius() * (dAngle - getAngle()));
-    if(_destPath < 0) _destPath = -_destPath;
+    sign = 1;
+    if(_destPath < 0)
+    {
+        _destPath = -_destPath;
+        sign = 0;
+    }
     _destPWM = pwm;
     _moveAcc = acceleration;
-
-    if(dAngle > 0){
-        sign = 1;
-    }
-    else sign = 0;
 
     relativeDirection = DIR_LEFT;
 

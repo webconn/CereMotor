@@ -52,6 +52,10 @@ menu "Robot modules"
     config USE_ODETECT
         bool "Opponent detector"
         default "n"
+
+    config USE_POINTS
+        bool "Points calculator"
+        default "n"
         
 endmenu
 

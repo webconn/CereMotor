@@ -210,6 +210,7 @@ void tactics_red(void);
 void tactics_blue(void);
 
 
+#define degreesToRadians(dgrs) (dgrs*3.14159/180)
 int main(void)
 {
     // 1. Init I/O
@@ -238,6 +239,16 @@ int main(void)
     //led_on(2);
     //led_on(3);
 
+    int i;
+    
+    for(i=360; i>=-360; i-=30)
+    {
+        move_rotateAbsolute(2000, 20, degreesToRadians(i));
+        while(move_isBusy());
+    }
+
+    while(1);;;
+
     while(sensor_read(&shmorgalka));;; // shmorgalka
     starter = 1;
     move_saveSwitch(DISABLE);
@@ -263,7 +274,6 @@ void sendInfo(void)
     uart_send(1, '\n');
 }
 
-#define degreesToRadians(dgrs) (dgrs*3.14159/180)
 void tactics_red(void)
 {
     _delay_ms(5000); // while younger brother starts
