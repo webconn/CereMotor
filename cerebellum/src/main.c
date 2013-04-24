@@ -167,14 +167,16 @@ static inline void _init_periph(void)
     elevator_l.pin = GPIO_Pin_4;
     sensor_add(&elevator_l);
 
-    wall_front.mode = SENSOR_ACTIVE_GND;
+    wall_front.mode = SENSOR_ANALOG;
     wall_front.gpio = GPIOA;
     wall_front.pin = GPIO_Pin_3;
+    wall_front.channel = 3;
     sensor_add(&wall_front);
     
-    wall_rear.mode = SENSOR_ACTIVE_GND;
+    wall_rear.mode = SENSOR_ANALOG;
     wall_rear.gpio = GPIOA;
     wall_rear.pin = GPIO_Pin_4;
+    wall_rear.channel = 4;
     sensor_add(&wall_rear);
 
     line_l.mode = SENSOR_ANALOG_THRESHOLD_HIGH;
@@ -239,16 +241,6 @@ int main(void)
     //led_on(2);
     //led_on(3);
 
-    int i;
-    
-    for(i=360; i>=-360; i-=30)
-    {
-        move_rotateAbsolute(2000, 20, degreesToRadians(i));
-        while(move_isBusy());
-    }
-
-    while(1);;;
-
     while(sensor_read(&shmorgalka));;; // shmorgalka
     starter = 1;
     move_saveSwitch(DISABLE);
@@ -274,6 +266,97 @@ void sendInfo(void)
     uart_send(1, '\n');
 }
 
+void tactics_red(void)
+{
+    paw_move(BIG, OPEN);
+    grip_set(LEFT, HOLD);
+    move_wall(1500, 15, mmToTicks(1000));
+    while(move_isBusy());
+    move_wall(1300, 20, -mmToTicks(1000));
+    while(move_isBusy());
+}
+
+void tactics_blue(void)
+{
+    // 1. Clear angle
+    move_refreshAngle();
+
+    // Refresh our correct position
+    updateX(mmToTicks(80));
+    updateY(mmToTicks(1400));
+    
+    // 2. Collecting glasses
+    // 2.1. Go away from the start zone
+    move_line(2000, 10, mmToTicks(30));
+    while(move_isBusy());
+
+    move_rotateAbsolute(1500, 20, -degreesToRadians(20));
+    while(move_isBusy());
+
+    // Collect 1st and 2nd glasses (to 1st floor)
+    move_line(2500, 20, mmToTicks(1050));
+    while(move_isBusy());
+    _delay_ms(100);
+    grip_set(LEFT, HOLD);
+    grip_set(RIGHT, HOLD);
+    _delay_ms(100);
+
+    // Collect 3rd glass
+    move_rotateAbsolute(2000, 20, -degreesToRadians(52));
+    elevator_move(UP);
+    while(move_isBusy());
+
+    move_line(2000, 15, mmToTicks(250));
+    while(move_isBusy());
+    _delay_ms(100);
+    take_glass(LEFT, DOWN);
+    _delay_ms(100);
+
+    // Collect 4th glass
+    move_rotateAbsolute(2000, 30, -degreesToRadians(115));
+    elevator_move(UP);
+    while(move_isBusy());
+
+    move_line(2000, 15, mmToTicks(190));
+    while(move_isBusy());
+    _delay_ms(100);
+    take_glass(LEFT, DOWN);
+    _delay_ms(100);
+
+    // Collect 5th glass
+    move_rotateAbsolute(2000, 30, -degreesToRadians(215));
+    elevator_move(UP);
+    while(move_isBusy());
+
+    move_line(2000, 15, mmToTicks(140));
+    while(move_isBusy());
+    _delay_ms(100);
+    take_glass(RIGHT, DOWN);
+    _delay_ms(100);
+
+    // Collect 6th glass
+    move_rotateAbsolute(2000, 30, -degreesToRadians(155));
+    elevator_move(UP);
+    while(move_isBusy());
+
+    move_line(2000, 15, mmToTicks(140));
+    while(move_isBusy());
+    _delay_ms(100);
+    take_glass(LEFT, DOWN);
+    _delay_ms(100);
+
+    // Go to the base
+    move_rotateAbsolute(2000, 30, -degreesToRadians(180));
+    while(move_isBusy());
+
+    move_line(2000, 15, mmToTicks(500));
+    while(move_isBusy());
+
+    grip_set(LEFT, OPEN);
+    grip_set(RIGHT, OPEN);
+}
+
+/*
 void tactics_red(void)
 {
     _delay_ms(5000); // while younger brother starts
@@ -453,7 +536,6 @@ void tactics_red(void)
 
 }
 
-
 void tactics_blue(void)
 {
     //_delay_ms(5000); // while younger brother starts
@@ -462,9 +544,9 @@ void tactics_blue(void)
     // 0. Clear angle
     move_refreshAngle();
 
-    /*move_line(2000, 20, mmToTicks(500));
+    move_line(2000, 20, mmToTicks(500));
     while(move_isBusy()) sendInfo();
-    while(1);;;*/
+    while(1);;;
     // Set coords
     updateX(mmToTicks(80));
     updateY(mmToTicks(1400));
@@ -992,7 +1074,7 @@ void tactics_blue_alt(void)
     while(move_isBusy()) sendInfo();
     // That's all, guys!
 }
-
+*/
 void manualCtl(void)
 {
     move_free();

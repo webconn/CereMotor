@@ -597,8 +597,28 @@ void _move_wall(void)
     // close to wall)
     // rf1 is front, rf2 is rear
 
+    // 1. Read sensors values and calculate errors
+    int32_t error = 1700 - sensor_read(_rf_rear);
+
+    error *= 3;
+    error /= 4;
+
+    // If error is positive, wall is far
+    // If error is negative, wall is too close
+
+    // Multiply errors by coefficient
+    
+    pid_update(error, _movePWM, &rightPWM, &leftPWM);
+
+    // Calculate left and right values
+    if(sign) // move backward
+        chassis_write(-leftPWM, -rightPWM);
+    else
+        chassis_write(leftPWM, rightPWM);
+    
+
     // 1. Collect data from rangefinders
-    int32_t state;
+    /*int32_t state;
     if(sign)
         state = ((sensor_read(_rf_rear) > 0) << 1)|((sensor_read(_rf_front) > 0));
     else
@@ -628,12 +648,12 @@ void _move_wall(void)
         state = -state;
         leftPWM = -integral;
         rightPWM = _movePWM;
-    }
+    }*/
 
-    if(sign)
+   /* if(sign)
         chassis_write(-leftPWM, -rightPWM);
     else
-        chassis_write(leftPWM, rightPWM);
+        chassis_write(leftPWM, rightPWM);*/
 }
 
 // Debug purposes
@@ -764,6 +784,7 @@ void move_wall(int32_t pwm, int32_t acceleration, int32_t path)
     encoder_reset(0);
     encoder_reset(1);
     _move_clear();
+    pid_reset();
 
     // 1. Set data
     _destPWM = pwm;
