@@ -11,6 +11,7 @@
 
 #include <stm32f10x.h>
 #include <cerebellum/robot.h>
+#include <robots/config.h>
 
 typedef struct{
     // Constants

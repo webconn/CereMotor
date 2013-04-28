@@ -6,13 +6,7 @@
  * @version 0.1
  */
 
-#include <stm32f10x.h>
-#include <stm32f10x_gpio.h>
-#include <stm32f10x_tim.h>
-#include <stm32f10x_rcc.h>
-
 #include <cerebellum/chassis.h>
-#include <robots/config.h>
 
 #define LEFT 1
 #define RIGHT 0

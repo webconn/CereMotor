@@ -1,5 +1,4 @@
 #include <cerebellum/pid.h>
-#include <robots/config.h>
 
 pidConfig _pid;
 

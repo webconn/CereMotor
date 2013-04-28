@@ -10,6 +10,7 @@
 #include <cerebellum/sensors.h>
 #include <cerebellum/led.h>
 #include <cerebellum/odetect.h>
+#include <cerebellum/points.h>
 
 #include <robots/config.h>
 

@@ -22,6 +22,8 @@
 #include <math.h>
 
 #include <stm32f10x.h>
+#include <cerebellum/robot.h>
+#include <robots/config.h>
 
 float getDeltaAngle(int32_t speed1, int32_t speed2);
 int32_t getCentralSpeed(int32_t speed1, int32_t speed2);
