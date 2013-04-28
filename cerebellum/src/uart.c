@@ -7,11 +7,6 @@
 
 #include <cerebellum/uart.h>
 
-#include <stm32f10x.h>
-#include <stm32f10x_usart.h>
-#include <stm32f10x_gpio.h>
-#include <stm32f10x_rcc.h>
-
 #ifdef __GNUC__
     #define PUTCHAR_PROTORYPE int __io_putchar(int ch)
 #else

@@ -57,6 +57,10 @@ menu "Robot modules"
         bool "Points calculator"
         default "n"
         
+    config USE_UARTGRAB
+        bool "UART direct grab"
+        default "n"
+        
 endmenu
 
 if USE_PERIPHBOARD
