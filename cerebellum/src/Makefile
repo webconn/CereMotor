@@ -9,6 +9,7 @@ objects-$(CONFIG_USE_SENSORS)+=sensors.o
 objects-$(CONFIG_USE_SERVO)+=servo.o
 objects-$(CONFIG_USE_ODETECT)+=odetect.o
 objects-$(CONFIG_USE_POINTS)+=points.o
+objects-$(CONFIG_USE_UARTGRAB)+=uartgrab.o
 
 subdirs-$(CONFIG_USE_PERIPHBOARD)+=periph
 subdirs-$(CONFIG_USE_ACTIONS)+=robot

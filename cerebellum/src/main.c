@@ -9,6 +9,7 @@
 #include <cerebellum/sensors.h>
 #include <cerebellum/servo.h>
 #include <cerebellum/odetect.h>
+#include <cerebellum/uartgrab.h>
 
 #include <stm32f10x.h>
 #include <stm32f10x_usart.h>
@@ -21,6 +22,9 @@
 #define LEFT 1
 #define RIGHT 0
 
+#define COLOR_RED 1
+#define COLOR_BLUE 2
+
 #include <robots/actions2013.h>
 
 void manualCtl(void);
@@ -28,6 +32,13 @@ volatile uint32_t _delay = 0;
 volatile uint32_t time = 0;
 volatile uint32_t starter = 0;
 volatile uint8_t flag_lock = 0;
+
+/**
+ * Periphery global variables
+ */
+servo elevator, bigpaw, smallpaw, grip_l, grip_r;
+sensor_t limiter_l, limiter_r, elevator_h, elevator_l, line_l, line_r, wall_front, wall_rear; // robot sensors
+sensor_t shmorgalka, field_select, button1, button2; // user interface
 
 void SysTick_Handler(void)
 {
@@ -70,10 +81,59 @@ void SysTick_Handler(void)
     if(time == 9700) // baloon ready
     {
         GPIO_ResetBits(GPIOC, GPIO_Pin_2);
-        manualCtl();
-        while(1);;; // end of battle
+        //manualCtl();
+        //while(1);;; // end of battle
     }
     led_off(2);
+
+    // Test for ColorDetector
+    uint8_t * data = uartgrab_get(1);
+
+    // 1. Get start zone color
+    if(sensor_read(&field_select)) // red
+    {
+        // Scan top
+        if((data[0] & 0b1100) == COLOR_RED << 2)
+        {
+            paw_move(BIG, OPEN);
+        }
+        else
+        {
+            paw_move(BIG, BLOW);
+        }
+
+        // Scan bottom
+        if((data[0] & 3) == COLOR_RED)
+        {
+            paw_move(SMALL, OPEN);
+        }
+        else
+        {
+            paw_move(SMALL, BLOW);
+        }
+    }
+    else // blue
+    {
+        // Scan top
+        if((data[0] & (3 << 2)) == COLOR_BLUE << 2)
+        {
+            paw_move(BIG, OPEN);
+        }
+        else
+        {
+            paw_move(BIG, BLOW);
+        }
+
+        // Scan bottom
+        if((data[0] & 3) == COLOR_BLUE)
+        {
+            paw_move(SMALL, OPEN);
+        }
+        else
+        {
+            paw_move(SMALL, BLOW);
+        }
+    }
 }
 
 void _delay_ms(uint32_t time)
@@ -95,17 +155,13 @@ static inline void _init_io(void)
     sensor_init();
     odetect_init();
 
+    // Init ColorDetector (at UART1)
+    uartgrab_init(1, 115200, 1); // UART1 at 115200 receives 1 byte
+
     __enable_irq();
 
     SysTick_Config(SystemCoreClock / 100); // 10 ms timer period
 }
-
-/**
- * Periphery global variables
- */
-servo elevator, bigpaw, smallpaw, grip_l, grip_r;
-sensor_t limiter_l, limiter_r, elevator_h, elevator_l, line_l, line_r, wall_front, wall_rear; // robot sensors
-sensor_t shmorgalka, field_select, button1, button2; // user interface
 
 static inline void _init_periph(void)
 {
@@ -190,6 +246,15 @@ static inline void _init_periph(void)
     line_r.pin = GPIO_Pin_3;
     line_r.channel = 13;
     sensor_add(&line_r);
+
+    // Camera lighting at PB15
+    GPIO_InitTypeDef light = {
+        .GPIO_Mode = GPIO_Mode_Out_PP,
+        .GPIO_Speed = GPIO_Speed_50MHz,
+        .GPIO_Pin = GPIO_Pin_15
+    };
+    GPIO_Init(GPIOB, &light);
+    GPIO_SetBits(GPIOB, GPIO_Pin_15);
 
     // Throw required sensors into actions list
     actions_init(bigpaw, smallpaw, elevator, grip_l, grip_r, &elevator_h, &elevator_l);
