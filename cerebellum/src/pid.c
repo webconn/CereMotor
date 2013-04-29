@@ -1,100 +1,61 @@
 #include <cerebellum/pid.h>
 #include <robots/config.h>
 
-pidConfig _pid;
-
-int32_t pid_calculateLinError(int32_t speed1, int32_t speed2)
+// If left speed is greater than right speed, function returns positive value
+// In another case - negative
+int32_t pid_errorChassisSpeed(pid_regulator * pid, int32_t speed_l, int32_t speed_r)
 {
-    // The linear error is just substraction of speeds
-    return speed1-speed2;
+    return pid->p_gain * (speed_l - speed_r);
 }
 
-int32_t pid_calculateRadError(int32_t speed1, int32_t speed2, int32_t radius)
+int32_t pid_errorChassisAngle(pid_regulator * pid, float realAngle, float rqAngle)
 {
-    // Radial error is something more difficult
-    // In fact, the dependence looks like this:
-    // V1*(R-r) == V2*(R+r)
-    // 
-    // But this dependence IRL looks like this:
-    // Va == Vb
-    //
-    // So, Va = V1*(R-r), Vb = V2*(R+r)
-    //
-    // Let's get V1 - V2
-    return (int32_t) (speed1 / (int32_t) (radius - mmToTicks(CONFIG_CHASSIS_RADIUS))) - (int32_t) (speed2 / (int32_t) (radius + mmToTicks(CONFIG_CHASSIS_RADIUS)));
+    return pid->p_gain * (rqAngle - realAngle); // TODO: change values in case of wrong error
 }
 
-int32_t pid_getRequiredPWM(int32_t requiredSpeed)
+void pid_correctChassis(int32_t correction, int32_t base,  int32_t * pwm_l, int32_t * pwm_r)
 {
-    // TODO it.
-    // We need to get relations between IRL speed and PWM wideness.
-    //
-    // Some cases to resolve this problem:
-    // 1. Use linear dependence
-    // 2. Collect data about current PWM and current speed and, so, calculate the speed
-    //
-    // It should be better to think about 2nd case, but now we will use 1st.
-    //
-    // There's something wrong, coefficient depends on frequency of collector timer
-    // and on wheel radius and on encoder resolution etc.
-    return 16*requiredSpeed; 
+    // Correction is positive when robot wrongly directed to right
+    // So, remove correction from left and add it to the right
+    *pwm_l = base - correction;
+    *pwm_r = base + correction;
+
+    // Check PWM for maximums and minimums
+    if(*pwm_l > CONFIG_PWM_ACCURACY)
+        *pwm_l = CONFIG_PWM_ACCURACY;
+    else if(*pwm_l < -CONFIG_PWM_ACCURACY)
+        *pwm_l = -CONFIG_PWM_ACCURACY;
+
+    if(*pwm_r > CONFIG_PWM_ACCURACY)
+        *pwm_r = CONFIG_PWM_ACCURACY;
+    else if(*pwm_r < -CONFIG_PWM_ACCURACY)
+        *pwm_r = -CONFIG_PWM_ACCURACY;
 }
 
-void pid_update(int32_t error, int32_t requiredPWM, int32_t * value1, int32_t * value2)
+int32_t pid_correction(pid_regulator * pid, int32_t error)
 {
-    error /= 8;
+    error /= 8; // this is for more accuracy
+
     // 1. Calculating integral
-    _pid.i_mem += error;
+    pid->i_mem += error;
 
-    if(_pid.i_mem > _pid.i_max)
-        _pid.i_mem = _pid.i_max;
-    else if(_pid.i_mem < _pid.i_min)
-        _pid.i_mem = _pid.i_min;
+    if(pid->i_mem > pid->i_max)
+        pid->i_mem = pid->i_max;
+    else if(pid->i_mem < pid->i_min)
+        pid->i_mem = pid->i_min;
 
-    int32_t integral = _pid.i_mem;
+    int32_t integral = pid->i_mem;
 
     // 2. Calculating derivative
-    int32_t derivative = _pid.d_mem;
-    _pid.d_mem = error;
+    int32_t derivative = pid->d_mem;
+    pid->d_mem = error;
 
     // 3. Calculating full sentence
-    int32_t correction = (error * _pid.p_gain) + (integral / _pid.i_rgain) - (derivative / _pid.d_rgain);
-
-    // 4. Calculate new data
-    *value1 = requiredPWM + correction;
-    *value2 = requiredPWM - correction;
-
-    // 5. Check for PWM overload
-    if(*value1 > CONFIG_PWM_ACCURACY)
-        *value1 = CONFIG_PWM_ACCURACY;
-    else if(*value1 < -CONFIG_PWM_ACCURACY)
-        *value1 = -CONFIG_PWM_ACCURACY;
-    if(*value2 > CONFIG_PWM_ACCURACY)
-        *value2 = CONFIG_PWM_ACCURACY;
-    else if(*value2 < -CONFIG_PWM_ACCURACY)
-        *value2 = -CONFIG_PWM_ACCURACY;
+    return error + (integral / pid->i_rgain) - (derivative / pid->d_rgain);
 }
 
-void pid_reset(void)
+void pid_reset(pid_regulator * pid)
 {
-    _pid.i_mem = 0;
-    _pid.d_mem = 0;
-}
-
-void pid_config(pidConfig * data)
-{
-    _pid.p_gain = data->p_gain;
-    _pid.i_rgain = data->i_rgain;
-    _pid.d_rgain = data->d_rgain;
-
-    _pid.i_min = data->i_min;
-    _pid.i_max = data->i_max;
-
-    _pid.i_mem = data->i_mem;
-    _pid.d_mem = data->d_mem;
-}
-
-pidConfig pid_dumpData(void)
-{
-    return _pid;
+    pid->i_mem = 0;
+    pid->d_mem = 0;
 }
