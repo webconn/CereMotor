@@ -1,5 +1,4 @@
 #include <cerebellum/pid.h>
-#include <robots/config.h>
 
 // If left speed is greater than right speed, function returns positive value
 // In another case - negative
