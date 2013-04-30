@@ -7,7 +7,11 @@
  * @date 5 Jan 2013
  */
 
+#include <robots/config.h>
 #include <stm32f10x.h>
+#include <stm32f10x_tim.h>
+#include <stm32f10x_gpio.h>
+#include <stm32f10x_rcc.h>
 
 typedef struct{
     int32_t value; // counted value

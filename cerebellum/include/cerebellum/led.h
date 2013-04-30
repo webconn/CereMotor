@@ -2,6 +2,9 @@
 #define _CEREBELLUM_LED_H
 
 #include <stm32f10x.h>
+#include <stm32f10x_gpio.h>
+#include <stm32f10x_rcc.h>
+#include <robots/config.h>
 
 void led_init(void);
 void led_on(uint32_t led);
