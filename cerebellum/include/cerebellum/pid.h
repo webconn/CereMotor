@@ -13,7 +13,7 @@
 #include <cerebellum/robot.h>
 #include <robots/config.h>
 
-typedef struct{
+typedef struct {
     // Constants
     int32_t p_gain;
     int32_t i_rgain;
@@ -25,27 +25,27 @@ typedef struct{
     // Algo memory
     int32_t i_mem;
     int32_t d_mem;
-} pid_regulator;
+} pid_regulator_t;
 
-int32_t pid_errorChassisSpeed(pid_regulator * pid, int32_t speed_l, int32_t speed_r);
-int32_t pid_errorChassisAngle(pid_regulator * pid, float realAngle, float rqAngle);
-void pid_correctChassis(int32_t correction, int32_t * pwm_l, int32_t * pwm_r);
+int32_t pid_errorChassisSpeed(pid_regulator_t * pid, int32_t speed_l, int32_t speed_r);
+int32_t pid_errorChassisAngle(pid_regulator_t * pid, float realAngle, float rqAngle);
+void pid_correctChassis(int32_t correction, int32_t base,  int32_t * pwm_l, int32_t * pwm_r);
 
 /**
  * PID correction calculating
  *
- * @param (pid_regulator *) pid PID state
+ * @param (pid_regulator_t *) pid PID state
  * @param int32_t error Calculated error
  *
  * @return int32_t Correction value (ex. for macros correctChassis)
  */
-int32_t pid_correction(pid_regulator * pid, int32_t error);
+int32_t pid_correction(pid_regulator_t * pid, int32_t error);
 
 /**
  * Reset PID specific values
  *
- * @param (pid_regulator *) pid PID state
+ * @param (pid_regulator_t *) pid PID state
  */
-void pid_reset(pid_regulator * pid);
+void pid_reset(pid_regulator_t * pid);
 
 #endif

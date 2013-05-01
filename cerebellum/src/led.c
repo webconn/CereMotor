@@ -51,7 +51,7 @@ void led_off(uint32_t led)
     }
 }
 
-void led_write(int led, int val)
+void led_write(uint16_t led, uint16_t val)
 {
     if(val)
         led_on(led);

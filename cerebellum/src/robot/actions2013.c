@@ -163,7 +163,7 @@ void take_glass(uint16_t side, uint16_t elevator_state)
     _delay_ms(200);
     int32_t path = 0, i = 0, result = 0;
 
-    float angle = getAngle();
+    //float angle = coords_getAngle();
     result = elevator_moveCareful(DOWN);
 
     while(!result && i < 2) // it should be a case when elevator is locked
@@ -173,8 +173,8 @@ void take_glass(uint16_t side, uint16_t elevator_state)
         elevator_move(UP);
         path += mmToTicks(150);
         led_on(3);
-        move_line(3000, 30, mmToTicks(150));
-        while(move_isBusy());
+        //move_line(3000, 30, mmToTicks(150));
+        //while(move_isBusy());
         _delay_ms(300);
         //grip_set(side, UNHOLD);
         //_delay_ms(200);
@@ -185,15 +185,15 @@ void take_glass(uint16_t side, uint16_t elevator_state)
     grip_set(side, HOLD); // take a glass
     _delay_ms(300);
 
-    move_line(2000, 30, -path); // go to the start position
+    //move_line(2000, 30, -path); // go to the start position
     if(elevator_state == UP)
         elevator_move(UP);
-    while(move_isBusy());
+    //while(move_isBusy());
 
     if(path > 0)
     {
-        move_rotateAbsolute(2000, 30, angle);
-        while(move_isBusy());
+       // move_rotateAbsolute(2000, 30, angle);
+        //while(move_isBusy());
     }
 
     led_off(3);

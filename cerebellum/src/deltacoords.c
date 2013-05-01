@@ -6,37 +6,37 @@ struct _coords{
     int32_t y;
 } _current_coords;
 
-int32_t getX(void)
+int32_t coords_getX(void)
 {
     return _current_coords.x;
 }
 
-int32_t getY(void)
+int32_t coords_getY(void)
 {
     return _current_coords.y;
 }
 
-float getAngle(void)
+float coords_getAngle(void)
 {
     return _current_coords.angle;
 }
 
-void updateX(int32_t new_x)
+void coords_updateX(int32_t new_x)
 {
     _current_coords.x = new_x;
 }
 
-void updateY(int32_t new_y)
+void coords_updateY(int32_t new_y)
 {
     _current_coords.y = new_y;
 }
 
-void updateAngle(float new_angle)
+void coords_updateAngle(float new_angle)
 {
     _current_coords.angle = new_angle;
 }
 
-int32_t getCentralSpeed(int32_t speed1, int32_t speed2)
+int32_t coords_getCentralSpeed(int32_t speed1, int32_t speed2)
 {
     // Central speed (module) is just arithmetic mean of
     // two speeds
@@ -45,7 +45,7 @@ int32_t getCentralSpeed(int32_t speed1, int32_t speed2)
     return (speed1 + speed2) / 2;
 }
 
-float getDeltaAngle(int32_t speed1, int32_t speed2)
+float coords_getDeltaAngle(int32_t speed1, int32_t speed2)
 {
     // Sure, I'm afraid of floating point computing on MCU, but
     // we have no alternatives (hmm.. only to reverce this and 
@@ -53,13 +53,13 @@ float getDeltaAngle(int32_t speed1, int32_t speed2)
     return ((float) (speed1 - speed2) / ((float)2*getChassisRadius()));
 }
 
-void updateCoords(int32_t speed1, int32_t speed2)
+void coords_update(int32_t speed1, int32_t speed2)
 {
     // Stage 1. Get central speed
-    int32_t centralSpeed = getCentralSpeed(speed1, speed2);
+    int32_t centralSpeed = coords_getCentralSpeed(speed1, speed2);
 
     // Stage 2. Get delta angle
-    float deltaAngle = getDeltaAngle(speed1, speed2);
+    float deltaAngle = coords_getDeltaAngle(speed1, speed2);
     
     #ifdef CONFIG_ANGLE_COEFF
     deltaAngle *= CONFIG_ANGLE_COEFF; // for angle correction 
@@ -81,5 +81,4 @@ void updateCoords(int32_t speed1, int32_t speed2)
     // Stage 5. Sum deltas with collected values
     _current_coords.x += deltaX;
     _current_coords.y += deltaY;
-
 }

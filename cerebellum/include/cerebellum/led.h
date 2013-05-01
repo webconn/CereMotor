@@ -9,6 +9,6 @@
 void led_init(void);
 void led_on(uint32_t led);
 void led_off(uint32_t led);
-void led_write(uint32_t led, uint32_t val);
+void led_write(uint16_t led, uint16_t val);
 
 #endif

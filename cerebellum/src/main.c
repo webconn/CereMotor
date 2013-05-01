@@ -33,6 +33,34 @@ volatile uint32_t time = 0;
 volatile uint32_t starter = 0;
 volatile uint8_t flag_lock = 0;
 
+// Global PID configuration
+
+// Direction corrector
+pid_regulator_t chassis_pid = {
+    .p_gain = 800,
+    .i_rgain = 100000,
+    .d_rgain = 5,
+    
+    .i_max = 10000,
+    .i_min = -10000,
+
+    .i_mem = 0,
+    .d_mem = 0
+};
+
+// Speed corrector
+pid_regulator_t speed_pid = {
+    .p_gain = 1100,
+    .i_rgain = 5000,
+    .d_rgain = 10,
+    
+    .i_max = 10000,
+    .i_min = -10000,
+
+    .i_mem = 0,
+    .d_mem = 0
+};
+
 /**
  * Periphery global variables
  */
@@ -44,26 +72,26 @@ void SysTick_Handler(void)
 {
     led_on(2);
     encoders_parser(); // update encoders values
-    updateCoords(encoder_getDelta(0), encoder_getDelta(1));
+    coords_update(encoder_getDelta(0), encoder_getDelta(1));
     
     if(flag_lock > 0 && flag_lock < 10)
         flag_lock++;
     // Check ODetect states
-    if(odetect_getDirection(move_getRelativeDirection()))
+    if(odetect_getDirection(0/*move_getRelativeDirection()*/))
     {
         flag_lock = 1;
-        move_pause();
+        //move_pause();
         led_on(3);
     }
     else if(flag_lock == 10)
     {
         flag_lock = 0;
-        move_continue();
+        //move_continue();
         led_off(3);
     }
 
     if(time < 9000)
-        move_tick();
+        __move_correct();
 
     
     if(_delay > 0)
@@ -142,15 +170,12 @@ void _delay_ms(uint32_t time)
     while(_delay > 0);;;
 }
 
-extern int32_t move_getMidAcc(void);
-
 static inline void _init_io(void)
 {
     chassis_init();
     encoders_init();
     led_init();
     uart_init(3, 9600);
-    uart_init(1, 115200);
     servo_init();
     sensor_init();
     odetect_init();
@@ -158,7 +183,19 @@ static inline void _init_io(void)
     // Init ColorDetector (at UART1)
     uartgrab_init(1, 115200, 1); // UART1 at 115200 receives 1 byte
 
+    // dirty-hack - disable JTAG using registers
+    AFIO->MAPR &= ~(7 << 24);
+    AFIO->MAPR |= (4 << 24);
+
     __enable_irq();
+    // Camera lighting at PB15
+    GPIO_InitTypeDef light = {
+        .GPIO_Mode = GPIO_Mode_Out_PP,
+        .GPIO_Speed = GPIO_Speed_50MHz,
+        .GPIO_Pin = GPIO_Pin_15
+    };
+    GPIO_Init(GPIOB, &light);
+    GPIO_ResetBits(GPIOB, GPIO_Pin_15);
 
     SysTick_Config(SystemCoreClock / 100); // 10 ms timer period
 }
@@ -247,37 +284,28 @@ static inline void _init_periph(void)
     line_r.channel = 13;
     sensor_add(&line_r);
 
-    // Camera lighting at PB15
-    GPIO_InitTypeDef light = {
-        .GPIO_Mode = GPIO_Mode_Out_PP,
-        .GPIO_Speed = GPIO_Speed_50MHz,
-        .GPIO_Pin = GPIO_Pin_15
-    };
-    GPIO_Init(GPIOB, &light);
-    GPIO_SetBits(GPIOB, GPIO_Pin_15);
+
+    // Configure movement stabilisation
+    // Send pointers to PID regulators
+    move_setPathPID(&chassis_pid);
+    move_setSpeedPID(&speed_pid);
+
+    //move_setMinBrakeDelta(8);
+    //move_stop();
 
     // Throw required sensors into actions list
     actions_init(bigpaw, smallpaw, elevator, grip_l, grip_r, &elevator_h, &elevator_l);
-    move_initLimiters(&limiter_l, &limiter_r);
-    move_initWallSensor(&wall_front, &wall_rear);
+    //move_initLimiters(&limiter_l, &limiter_r);
+    //move_initWallSensor(&wall_front, &wall_rear);
     paw_move(BIG, CLOSE);
     paw_move(SMALL, CLOSE);
     grip_set(LEFT, OPEN);
     grip_set(RIGHT, OPEN);
-
-    // dirty-hack - disable JTAG using registers
-    AFIO->MAPR &= ~(7 << 24);
-    AFIO->MAPR |= (4 << 24);
-
-    move_setMinBrakeDelta(8);
-    move_stop();
 }
 
 void tactics_red(void);
 void tactics_blue(void);
 
-
-#define degreesToRadians(dgrs) (dgrs*3.14159/180)
 int main(void)
 {
     // 1. Init I/O
@@ -286,20 +314,7 @@ int main(void)
     // 2. Configuring all sensors, servos etc.
     _init_periph();
 
-    // Configuring PID
-    pidConfig cnf = {
-        .p_gain = 7,
-        .i_rgain = 1000,
-        .d_rgain = 5,
-        
-        .i_max = 8191,
-        .i_min = -8191,
-
-        .i_mem = 0,
-        .d_mem = 0
-    };
-
-    pid_config(&cnf);
+    // 3. Configuring chassis PID regulators
 
     // Turning on LED - end of initialisation
     led_on(1);
@@ -308,7 +323,7 @@ int main(void)
 
     while(sensor_read(&shmorgalka));;; // shmorgalka
     starter = 1;
-    move_saveSwitch(DISABLE);
+    //move_saveSwitch(DISABLE);
     
     // Select tactics switch
     if(sensor_read(&field_select))
@@ -327,10 +342,44 @@ int main(void)
 
 void sendInfo(void)
 {
-    printf("M:%d;P:%05ld,%05ld;E:%05ld,%05ld;A:%06f;C:%05ld,%05ld\n\r", move_isBusy(), move_getPWM(0), move_getPWM(1), encoder_getPath(1), encoder_getPath(0), getAngle(), getX(), getY());
+    //printf("M:%d;P:%05ld,%05ld;E:%05ld,%05ld;A:%06f;C:%05ld,%05ld\n\r", move_isBusy(), move_getPWM(0), move_getPWM(1), encoder_getPath(1), encoder_getPath(0), getAngle(), getX(), getY());
     uart_send(1, '\n');
 }
 
+void tactics_red(void)
+{
+    // To start to move:
+    // 1. Set calculators
+    move_setSpeedValueCalculator(&__move_speedCalculator_acc);
+    move_setSpeedErrorCalculator(&__move_speedErrorCalculator);
+    move_setPathErrorCalculator(&__move_angleErrorCalculator);
+    move_setStopCalculator(&__move_stopCalculator_basic);
+    move_setStopCoefficient(16);
+
+    // 2. Set PIDs
+    move_setPathPID(&chassis_pid);
+    move_setSpeedPID(&speed_pid);
+
+    // 3. Set required speeds and path if required
+    move_setRqSpeed(150);
+    move_setRqAcceleration(3);
+    move_setRqAccelerationDivider(1);
+    move_setRqPath(mmToTicks(500));
+
+    // 4. Apply values for algos
+    move_applyUserValues();
+
+    // Now we should move
+    _delay_ms(10000);
+
+    move_setPathErrorCalculator(&__move_pathErrorCalculator_stay);
+}
+
+void tactics_blue(void)
+{
+
+}
+/*
 void tactics_red(void)
 {
     paw_move(BIG, OPEN);
@@ -420,7 +469,7 @@ void tactics_blue(void)
     grip_set(LEFT, OPEN);
     grip_set(RIGHT, OPEN);
 }
-
+*/
 /*
 void tactics_red(void)
 {
@@ -1142,7 +1191,7 @@ void tactics_blue_alt(void)
 */
 void manualCtl(void)
 {
-    move_free();
+    //move_free();
     while(1)
     {
         uint8_t byte = uart_read(1);

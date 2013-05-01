@@ -25,18 +25,17 @@
 #include <cerebellum/robot.h>
 #include <robots/config.h>
 
-float getDeltaAngle(int32_t speed1, int32_t speed2);
-int32_t getCentralSpeed(int32_t speed1, int32_t speed2);
+float coords_getDeltaAngle(int32_t speed1, int32_t speed2);
+int32_t coords_getCentralSpeed(int32_t speed1, int32_t speed2);
 
-int32_t getX(void);
-int32_t getY(void);
-float getAngle(void);
+int32_t coords_getX(void);
+int32_t coords_getY(void);
+float coords_getAngle(void);
 
-void updateX(int32_t x);
-void updateY(int32_t y);
-void updateAngle(float angle);
+void coords_updateX(int32_t x);
+void coords_updateY(int32_t y);
+void coords_updateAngle(float angle);
 
-void updateCoords(int32_t speed1, int32_t speed2);
-
+void coords_update(int32_t speed1, int32_t speed2);
 
 #endif

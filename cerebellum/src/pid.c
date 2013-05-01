@@ -2,12 +2,12 @@
 
 // If left speed is greater than right speed, function returns positive value
 // In another case - negative
-int32_t pid_errorChassisSpeed(pid_regulator * pid, int32_t speed_l, int32_t speed_r)
+int32_t pid_errorChassisSpeed(pid_regulator_t * pid, int32_t speed_l, int32_t speed_r)
 {
     return pid->p_gain * (speed_l - speed_r);
 }
 
-int32_t pid_errorChassisAngle(pid_regulator * pid, float realAngle, float rqAngle)
+int32_t pid_errorChassisAngle(pid_regulator_t * pid, float realAngle, float rqAngle)
 {
     return pid->p_gain * (rqAngle - realAngle); // TODO: change values in case of wrong error
 }
@@ -31,9 +31,10 @@ void pid_correctChassis(int32_t correction, int32_t base,  int32_t * pwm_l, int3
         *pwm_r = -CONFIG_PWM_ACCURACY;
 }
 
-int32_t pid_correction(pid_regulator * pid, int32_t error)
+int32_t pid_correction(pid_regulator_t * pid, int32_t error)
 {
     error /= 8; // this is for more accuracy
+    error *= pid->p_gain;
 
     // 1. Calculating integral
     pid->i_mem += error;
@@ -50,10 +51,20 @@ int32_t pid_correction(pid_regulator * pid, int32_t error)
     pid->d_mem = error;
 
     // 3. Calculating full sentence
-    return error + (integral / pid->i_rgain) - (derivative / pid->d_rgain);
+    if(pid->i_rgain == 0)
+        integral = 0;
+    else
+        integral /= pid->i_rgain;
+
+    if(pid->d_rgain == 0)
+        derivative = 0;
+    else
+        derivative /= pid->d_rgain;
+
+    return error + integral - derivative;
 }
 
-void pid_reset(pid_regulator * pid)
+void pid_reset(pid_regulator_t * pid)
 {
     pid->i_mem = 0;
     pid->d_mem = 0;
