@@ -1,6 +1,5 @@
 #include <cerebellum/movement.h>
 #include <stdio.h>
-#include <cerebellum/points.h>
 
 // MinBrakeDelta is a calibrated value
 int32_t MinBrakeDelta = 0;

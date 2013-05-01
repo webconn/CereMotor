@@ -1,6 +1,4 @@
 #include <cerebellum/deltacoords.h>
-#include <cerebellum/robot.h>
-#include <robots/config.h>
 
 struct _coords{
     float angle; // in radians
