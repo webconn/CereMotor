@@ -514,6 +514,7 @@ int32_t integral = 0;
 int32_t oldState = 0;
 int32_t pulse = 0;
 int32_t _oldState = 0;
+int32_t _speed = 0;
 
 void _move_wall(void)
 {
@@ -532,12 +533,9 @@ void _move_wall(void)
         rightSpeed = -rightSpeed;
     }
 
-    int32_t acceleration = ((leftSpeed + rightSpeed) / 2) - lastSpeed;
     int32_t aripPath = (leftPath + rightPath) / 2; // sum and divide by 2
 
-    lastSpeed = (leftSpeed + rightSpeed) / 2;
-
-    if(moveMode == 7) // normal operation (no brakes)
+    /*if(moveMode == 7) // normal operation (no brakes)
     {
         // 1. Calculate middle acceleration
         if(!_midAcc && acceleration > 0)
@@ -577,7 +575,7 @@ void _move_wall(void)
         // At this stage we need to control encoders speed
         if(leftSpeed > 5 && rightSpeed > 5 && acceleration >= -_midAcc) // speed down while we should move
             _movePWM -= _moveAcc;
-
+*/
         
         // If we reached end, stop engines and shut algo down
         if(aripPath >= _destPath)
@@ -589,7 +587,7 @@ void _move_wall(void)
             _move_stay(); // stop right now, I said!
             return;
         }
-    }
+    //}
 
     // Stabilisation by barrier rangefinders
     // We think that ON-state of rangefinder is
@@ -598,16 +596,23 @@ void _move_wall(void)
     // rf1 is front, rf2 is rear
 
     // 1. Read sensors values and calculate errors
-    int32_t error = 1700 - sensor_read(_rf_rear);
-
-    error *= 3;
-    error /= 4;
+    int32_t error = 0;
+    if(!sign)
+        error = 1400 - sensor_read(_rf_rear);
+    else
+        error = 2800 - sensor_read(_rf_front);
 
     // If error is positive, wall is far
     // If error is negative, wall is too close
 
+    // Now check out the speed
+    if(leftSpeed + rightSpeed > 2 * _speed)
+        _movePWM -= _moveAcc;
+    else
+        _movePWM += _moveAcc;
+
     // Multiply errors by coefficient
-    
+
     pid_update(error, _movePWM, &rightPWM, &leftPWM);
 
     // Calculate left and right values
@@ -776,7 +781,7 @@ void move_rotateAbsolute(int32_t pwm, int32_t acceleration, float dAngle)
 /**
  * Move by wall initializer
  */
-void move_wall(int32_t pwm, int32_t acceleration, int32_t path)
+void move_wall(int32_t speed, int32_t acceleration, int32_t path)
 {
     if(path == 0)
         return; // no movement is required
@@ -787,8 +792,8 @@ void move_wall(int32_t pwm, int32_t acceleration, int32_t path)
     pid_reset();
 
     // 1. Set data
-    _destPWM = pwm;
     _moveAcc = acceleration;
+    _speed = speed;
 
     sign = 0;
     if(path < 0)

@@ -28,7 +28,7 @@
 #include <robots/actions2013.h>
 
 void manualCtl(void);
-volatile uint32_t _delay = 0;
+volatile uint32_t _delay = 0, _blowUp = 0, _blowDown = 0, _detect = 0;
 volatile uint32_t time = 0;
 volatile uint32_t starter = 0;
 volatile uint8_t flag_lock = 0;
@@ -69,14 +69,34 @@ void SysTick_Handler(void)
     if(_delay > 0)
         _delay--;
 
+    if(_blowUp > 0)
+        _blowUp--;
+    else if(_blowUp == 0)
+    {
+        paw_move(BIG, OPEN);
+    }
+
+    if(_blowDown > 0)
+        _blowDown--;
+    else if(_blowDown == 0)
+    {
+        paw_move(SMALL, OPEN);
+    }
+
+    if(_detect > 0)
+        _detect--;
+    else if(_detect == 0)
+        led_off(3);
+
     if(starter == 1)
     {
-        time++;
+        //time++;
     }
     if(time == 9000) // stop moving and inflate the baloon
     {
         chassis_break(8192, 8192);
         GPIO_SetBits(GPIOC, GPIO_Pin_2);
+        GPIO_ResetBits(GPIOB, GPIO_Pin_15);
     }
     if(time == 9700) // baloon ready
     {
@@ -87,7 +107,7 @@ void SysTick_Handler(void)
     led_off(2);
 
     // Test for ColorDetector
-    uint8_t * data = uartgrab_get(1);
+ /*   uint8_t * data = uartgrab_get(1);
 
     // 1. Get start zone color
     if(sensor_read(&field_select)) // red
@@ -133,7 +153,7 @@ void SysTick_Handler(void)
         {
             paw_move(SMALL, BLOW);
         }
-    }
+    }*/
 }
 
 void _delay_ms(uint32_t time)
@@ -276,6 +296,7 @@ static inline void _init_periph(void)
 void tactics_red(void);
 void tactics_blue(void);
 
+int color = 0;
 
 #define degreesToRadians(dgrs) (dgrs*3.14159/180)
 int main(void)
@@ -313,10 +334,12 @@ int main(void)
     // Select tactics switch
     if(sensor_read(&field_select))
     {
+        color = COLOR_RED;
         tactics_red();
     }
     else
     {
+        color = COLOR_BLUE;
         tactics_blue();
     }
 
@@ -333,12 +356,133 @@ void sendInfo(void)
 
 void tactics_red(void)
 {
-    paw_move(BIG, OPEN);
+   /* paw_move(BIG, OPEN);
+    paw_move(SMALL, OPEN);
     grip_set(LEFT, HOLD);
-    move_wall(1500, 15, mmToTicks(1000));
+    move_wall(15, 15, mmToTicks(1000));
     while(move_isBusy());
-    move_wall(1300, 20, -mmToTicks(1000));
+    move_wall(15, 20, -mmToTicks(1000));
     while(move_isBusy());
+    move_stop();*/
+
+    grip_set(LEFT, HOLD); // set sensors
+
+    paw_move(BIG, OPEN);
+    paw_move(SMALL, OPEN);
+    
+    int32_t pos_top = 0, pos_bottom = 0;
+
+    int32_t candles_top[] = {0, mmToTicks(200), mmToTicks(2*233), mmToTicks(3*258), mmToTicks(4*263), mmToTicks(5*264), mmToTicks(6*261), 999999, mmToTicks(1820)};
+    int32_t candles_bottom[] = {0, mmToTicks(175), mmToTicks(2*190), mmToTicks(3*175), mmToTicks(4*180), mmToTicks(5*184), mmToTicks(6*180), mmToTicks(7*179), mmToTicks(8*179), mmToTicks(9*178), mmToTicks(10*180), 999999}; //, mmToTicks(11*173)};
+
+    int32_t m_top = 0, m_bottom = 0;
+    
+    //int32_t measures_top[] = {2200, 6610, 9500, 12900, 15650, 18650, 999999};
+    //int32_t measures_top[] = {2200, 5840, 9410, 12980, 16550, 19120, 999999};
+
+    //int32_t measures_bottom[] = {100, 3125, 5600, 7900, 10400, 12400, 14800, 17200, 19600, 22000, 999999};
+    //int32_t measures_bottom[] = {100, 3000, 5478, 7956, 10434, 12912, 15390, 17868, 20346, 22824, 999999};
+
+    // Measures by math
+    int32_t measures_top[] = {mmToTicks(310), mmToTicks(570), mmToTicks(825), mmToTicks(1120), mmToTicks(1350), mmToTicks(1610), 999999};
+
+    int32_t measures_bottom[] = {mmToTicks(183), mmToTicks(373), mmToTicks(560), mmToTicks(727), mmToTicks(904), mmToTicks(1071), mmToTicks(1260), mmToTicks(1440), mmToTicks(1535), mmToTicks(1759), 999999};
+
+    // To hit the candles:
+    // 1. Clear angle (by crashing the wall)
+    move_refreshAngle();
+
+    // Kill 1st candle
+    _blowDown = 50;
+    paw_move(SMALL, BLOW);
+    _delay_ms(500);
+    paw_move(SMALL, OPEN);
+
+    // 1.1. Go away from the wall
+    move_line(4000, 20, mmToTicks(50));
+    while(move_isBusy());// sendInfo();
+
+    // 2. Rotate CCW to about 15 degrees
+    move_rotate(2000, 30, degreesToRadians(18));
+    while(move_isBusy());// sendInfo();
+
+    color = COLOR_BLUE;
+
+    // 3. Hit the first candle
+    if(candles_top[0] == 0)
+    {
+        pos_top = 1;
+        _blowUp = 50;
+        paw_move(BIG, BLOW);
+        _delay_ms(500);
+        paw_move(BIG, OPEN);
+    }
+
+    move_rotate(2000, 30, -0.261799);
+    while(move_isBusy());// sendInfo();
+
+    // 4. Reset the angle again
+    move_refreshAngle();
+    
+    // 3. Move by cake and hit the candles from the list!
+    encoder_reset(0);
+    encoder_reset(1);
+
+    uint8_t * measure = uartgrab_get(1);
+    move_wall(10, 100, mmToTicks(1850));
+    /*while(move_isBusy())
+    {
+        if(uart_read(1) == ' ')
+        {
+            sendInfo();
+            _delay_ms(300);
+        }
+    }*/
+    
+    while(move_isBusy())
+    {
+        int32_t aripPath = (encoder_getPath(1) + encoder_getPath(0)) / 2;
+        
+        // 1. Make a measure
+        if(aripPath >= measures_top[m_top] - mmToTicks(150))
+        {
+            if(((color == COLOR_RED) && (measure[0] >> 2) == COLOR_BLUE) ||
+                ((color == COLOR_BLUE) && (measure[0] >> 2) != COLOR_BLUE))
+                pos_top++;
+            m_top++;
+        }
+        if(aripPath >= measures_bottom[m_bottom] - mmToTicks(150))
+        {
+            _detect = 50;
+            led_on(3);
+            
+            if(((color == COLOR_RED) && (measure[0] & 3) == COLOR_BLUE) ||
+                ((color == COLOR_BLUE) && (measure[0] & 3) != COLOR_BLUE))
+                pos_bottom++;
+            m_bottom++;
+        }
+
+        if(aripPath >= candles_top[pos_top])
+        {
+            _blowUp = 50;
+            pos_top++;
+            paw_move(BIG, BLOW);
+        }
+
+        if(aripPath >= candles_bottom[pos_bottom])
+        {
+            _blowDown = 50;
+            pos_bottom++;
+            paw_move(SMALL, BLOW);
+        }
+    }
+
+    move_rotate(3000, 30, -degreesToRadians(25));
+    while(move_isBusy());
+
+    paw_move(SMALL, BLOW);
+    _delay_ms(300);
+    paw_move(SMALL, OPEN);
 }
 
 void tactics_blue(void)
