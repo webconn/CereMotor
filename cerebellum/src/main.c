@@ -28,7 +28,7 @@
 #include <robots/actions2013.h>
 
 void manualCtl(void);
-volatile uint32_t _delay = 0, _blowUp = 0, _blowDown = 0, _detect = 0;
+volatile uint32_t _delay = 0, _blowUp = 0, _blowDown = 0, _detect = 0, _cake = 0;
 volatile uint32_t time = 0;
 volatile uint32_t starter = 0;
 volatile uint8_t flag_lock = 0;
@@ -46,16 +46,16 @@ void SysTick_Handler(void)
     encoders_parser(); // update encoders values
     updateCoords(encoder_getDelta(0), encoder_getDelta(1));
     
-    if(flag_lock > 0 && flag_lock < 10)
+    if(flag_lock > 0 && flag_lock < 50)
         flag_lock++;
     // Check ODetect states
-    if(odetect_getDirection(move_getRelativeDirection()))
+    if(odetect_getDirection(move_getRelativeDirection()) && move_isBusy() > 0)
     {
         flag_lock = 1;
         move_pause();
         led_on(3);
     }
-    else if(flag_lock == 10)
+    else if(flag_lock <= 50 && move_isStable())
     {
         flag_lock = 0;
         move_continue();
@@ -71,14 +71,14 @@ void SysTick_Handler(void)
 
     if(_blowUp > 0)
         _blowUp--;
-    else if(_blowUp == 0)
+    else if(_blowUp == 0 && _cake)
     {
         paw_move(BIG, OPEN);
     }
 
     if(_blowDown > 0)
         _blowDown--;
-    else if(_blowDown == 0)
+    else if(_blowDown == 0 && _cake)
     {
         paw_move(SMALL, OPEN);
     }
@@ -90,7 +90,7 @@ void SysTick_Handler(void)
 
     if(starter == 1)
     {
-        //time++;
+        time++;
     }
     if(time == 9000) // stop moving and inflate the baloon
     {
@@ -105,55 +105,6 @@ void SysTick_Handler(void)
         //while(1);;; // end of battle
     }
     led_off(2);
-
-    // Test for ColorDetector
- /*   uint8_t * data = uartgrab_get(1);
-
-    // 1. Get start zone color
-    if(sensor_read(&field_select)) // red
-    {
-        // Scan top
-        if((data[0] & 0b1100) == COLOR_RED << 2)
-        {
-            paw_move(BIG, OPEN);
-        }
-        else
-        {
-            paw_move(BIG, BLOW);
-        }
-
-        // Scan bottom
-        if((data[0] & 3) == COLOR_RED)
-        {
-            paw_move(SMALL, OPEN);
-        }
-        else
-        {
-            paw_move(SMALL, BLOW);
-        }
-    }
-    else // blue
-    {
-        // Scan top
-        if((data[0] & (3 << 2)) == COLOR_BLUE << 2)
-        {
-            paw_move(BIG, OPEN);
-        }
-        else
-        {
-            paw_move(BIG, BLOW);
-        }
-
-        // Scan bottom
-        if((data[0] & 3) == COLOR_BLUE)
-        {
-            paw_move(SMALL, OPEN);
-        }
-        else
-        {
-            paw_move(SMALL, BLOW);
-        }
-    }*/
 }
 
 void _delay_ms(uint32_t time)
@@ -274,7 +225,6 @@ static inline void _init_periph(void)
         .GPIO_Pin = GPIO_Pin_15
     };
     GPIO_Init(GPIOB, &light);
-    GPIO_SetBits(GPIOB, GPIO_Pin_15);
 
     // Throw required sensors into actions list
     actions_init(bigpaw, smallpaw, elevator, grip_l, grip_r, &elevator_h, &elevator_l);
@@ -356,20 +306,132 @@ void sendInfo(void)
 
 void tactics_red(void)
 {
-   /* paw_move(BIG, OPEN);
-    paw_move(SMALL, OPEN);
+    move_wall(10, 20, mmToTicks(400));
+    // 1. Clear angle
+    move_refreshAngle();
+
+    // Refresh our correct position
+    updateX(mmToTicks(80));
+    updateY(mmToTicks(1400));
+    
+    // 2. Collecting glasses
+    // 2.1. Go away from the start zone
+    move_line(2000, 10, mmToTicks(30));
+    while(move_isBusy()) sendInfo();
+
+    move_rotateAbsolute(1500, 20, degreesToRadians(20));
+    while(move_isBusy()) sendInfo();
+
+    // Collect 1st and 2nd glasses (to 1st floor)
+    move_line(2500, 20, mmToTicks(950));
+    while(move_isBusy()) sendInfo();
+    move_line(1500, 20, mmToTicks(120));
+    while(move_isBusy()) sendInfo();
+    _delay_ms(300);
     grip_set(LEFT, HOLD);
-    move_wall(15, 15, mmToTicks(1000));
-    while(move_isBusy());
-    move_wall(15, 20, -mmToTicks(1000));
-    while(move_isBusy());
-    move_stop();*/
+    grip_set(RIGHT, HOLD);
+    _delay_ms(300);
 
-    grip_set(LEFT, HOLD); // set sensors
+    // Collect 3rd glass
+    move_rotateAbsolute(2000, 20, degreesToRadians(52));
+    elevator_move(UP);
+    while(move_isBusy()) sendInfo();
 
+    move_line(2000, 15, mmToTicks(250));
+    while(move_isBusy()) sendInfo();
+    _delay_ms(100);
+    take_glass(RIGHT, DOWN);
+    _delay_ms(100);
+
+    // Collect 4th glass
+    move_rotateAbsolute(2000, 30, degreesToRadians(115));
+    elevator_move(UP);
+    while(move_isBusy()) sendInfo();
+
+    move_line(2000, 15, mmToTicks(260));
+    while(move_isBusy()) sendInfo();
+    _delay_ms(100);
+    take_glass(RIGHT, DOWN);
+    _delay_ms(100);
+
+    // Collect 5th glass
+    move_rotateAbsolute(2000, 30, degreesToRadians(235));
+    elevator_move(UP);
+    while(move_isBusy()) sendInfo();
+
+    move_line(2000, 15, mmToTicks(190));
+    while(move_isBusy()) sendInfo();
+    _delay_ms(100);
+    take_glass(LEFT, DOWN);
+    _delay_ms(100);
+
+    // Collect 6th glass
+    move_rotateAbsolute(2000, 30, degreesToRadians(135));
+    elevator_move(UP);
+    while(move_isBusy()) sendInfo();
+
+    move_line(2000, 15, mmToTicks(230));
+    while(move_isBusy()) sendInfo();
+    _delay_ms(100);
+    take_glass(RIGHT, DOWN);
+    _delay_ms(100);
+
+    // Go to the base
+    move_rotateAbsolute(2000, 30, degreesToRadians(180));
+    while(move_isBusy()) sendInfo();
+
+    move_line(2000, 15, mmToTicks(500));
+    while(move_isBusy()) sendInfo();
+
+    grip_set(LEFT, OPEN);
+    grip_set(RIGHT, OPEN);
+    
+    // Now go to the cake
+    
+    // Go away from glasses
+    move_line(2000, 15, -mmToTicks(200));
+    while(move_isBusy()) sendInfo();
+
+    move_rotateAbsolute(2000, 30, degreesToRadians(140));
+    while(move_isBusy()) sendInfo();
+
+    move_line(5000, 30, -mmToTicks(800));
+    while(move_isBusy()) sendInfo();
+    
     paw_move(BIG, OPEN);
     paw_move(SMALL, OPEN);
-    
+
+    _cake = 1;
+    grip_set(LEFT, HOLD);
+    move_line(2000, 30, -mmToTicks(1200));
+    _delay_ms(300);
+    while(move_isBusy())
+    {
+        if(sensor_read(&wall_front) > 2600)
+        {
+            break;
+        }
+    }
+
+    move_free();
+    chassis_write(0, 4000);
+    while(1)
+    {
+        if(1400 < sensor_read(&wall_rear))
+            break;
+    }
+
+    _cake = 1;
+    grip_set(LEFT, HOLD);
+    move_wall(10, 15, -mmToTicks(2000));
+    while(move_isBusy())
+    {
+        if(sensor_read(&limiter_l) || sensor_read(&limiter_r))
+            break;
+    }
+
+    GPIO_SetBits(GPIOB, GPIO_Pin_15); // turn on lighting
+
     int32_t pos_top = 0, pos_bottom = 0;
 
     int32_t candles_top[] = {0, mmToTicks(200), mmToTicks(2*233), mmToTicks(3*258), mmToTicks(4*263), mmToTicks(5*264), mmToTicks(6*261), 999999, mmToTicks(1820)};
@@ -386,7 +448,215 @@ void tactics_red(void)
     // Measures by math
     int32_t measures_top[] = {mmToTicks(310), mmToTicks(570), mmToTicks(825), mmToTicks(1120), mmToTicks(1350), mmToTicks(1610), 999999};
 
-    int32_t measures_bottom[] = {mmToTicks(183), mmToTicks(373), mmToTicks(560), mmToTicks(727), mmToTicks(904), mmToTicks(1071), mmToTicks(1260), mmToTicks(1440), mmToTicks(1535), mmToTicks(1759), 999999};
+    int32_t measures_bottom[] = {mmToTicks(183), mmToTicks(373), mmToTicks(560), mmToTicks(747), mmToTicks(854), mmToTicks(1097), mmToTicks(1260), mmToTicks(1440), mmToTicks(1565), mmToTicks(1789), 999999};
+
+    // To hit the candles:
+    // 1. Clear angle (by crashing the wall)
+    move_refreshAngle();
+
+    // 3. Move by cake and hit the candles from the list!
+    encoder_reset(0);
+    encoder_reset(1);
+
+    uint8_t * measure = uartgrab_get(1);
+    move_wall(15, 100, mmToTicks(1850));
+    
+    while(move_isBusy())
+    {
+        int32_t aripPath = (encoder_getPath(1) + encoder_getPath(0)) / 2;
+        
+        // 1. Make a measure
+        if(aripPath >= measures_top[m_top] - mmToTicks(150))
+        {
+            if(((color == COLOR_RED) && (measure[0] >> 2) == COLOR_BLUE) ||
+                ((color == COLOR_BLUE) && (measure[0] >> 2) != COLOR_BLUE))
+                pos_top++;
+            m_top++;
+        }
+        if(aripPath >= measures_bottom[m_bottom] - mmToTicks(150))
+        {
+            _detect = 30;
+            led_on(3);
+            
+            if(((color == COLOR_RED) && (measure[0] & 3) == COLOR_BLUE) ||
+                ((color == COLOR_BLUE) && (measure[0] & 3) != COLOR_BLUE))
+                pos_bottom++;
+            m_bottom++;
+        }
+
+        if(aripPath >= candles_top[pos_top])
+        {
+            _blowUp = 50;
+            pos_top++;
+            paw_move(BIG, BLOW);
+        }
+
+        if(aripPath >= candles_bottom[pos_bottom])
+        {
+            _blowDown = 50;
+            pos_bottom++;
+            paw_move(SMALL, BLOW);
+        }
+
+        _delay_ms(100);
+    }
+
+    move_rotate(3000, 30, -degreesToRadians(25));
+    while(move_isBusy()) sendInfo();
+
+    _blowDown = 50;
+    paw_move(SMALL, BLOW);
+    _delay_ms(300);
+    paw_move(SMALL, OPEN);
+}
+
+void tactics_blue(void)
+{
+    // 1. Clear angle
+    move_refreshAngle();
+
+    // Refresh our correct position
+    updateX(mmToTicks(80));
+    updateY(mmToTicks(1400));
+    
+    // 2. Collecting glasses
+    // 2.1. Go away from the start zone
+    move_line(2000, 10, mmToTicks(30));
+    while(move_isBusy()) sendInfo();
+
+    move_rotateAbsolute(1500, 20, -degreesToRadians(20));
+    while(move_isBusy()) sendInfo();
+
+    // Collect 1st and 2nd glasses (to 1st floor)
+    move_line(2500, 20, mmToTicks(950));
+    while(move_isBusy()) sendInfo();
+    move_line(1500, 20, mmToTicks(120));
+    while(move_isBusy()) sendInfo();
+    _delay_ms(300);
+    grip_set(LEFT, HOLD);
+    grip_set(RIGHT, HOLD);
+    _delay_ms(300);
+
+    // Collect 3rd glass
+    move_rotateAbsolute(2000, 20, -degreesToRadians(52));
+    elevator_move(UP);
+    while(move_isBusy()) sendInfo();
+
+    move_line(2000, 15, mmToTicks(250));
+    while(move_isBusy()) sendInfo();
+    _delay_ms(100);
+    take_glass(LEFT, DOWN);
+    _delay_ms(100);
+
+    // Collect 4th glass
+    move_rotateAbsolute(2000, 30, -degreesToRadians(115));
+    elevator_move(UP);
+    while(move_isBusy()) sendInfo();
+
+    move_line(2000, 15, mmToTicks(260));
+    while(move_isBusy()) sendInfo();
+    _delay_ms(100);
+    take_glass(LEFT, DOWN);
+    _delay_ms(100);
+
+    // Collect 5th glass
+    move_rotateAbsolute(2000, 30, -degreesToRadians(235));
+    elevator_move(UP);
+    while(move_isBusy()) sendInfo();
+
+    move_line(2000, 15, mmToTicks(190));
+    while(move_isBusy()) sendInfo();
+    _delay_ms(100);
+    take_glass(RIGHT, DOWN);
+    _delay_ms(100);
+
+    // Collect 6th glass
+    move_rotateAbsolute(2000, 30, -degreesToRadians(145));
+    elevator_move(UP);
+    while(move_isBusy()) sendInfo();
+
+    move_line(2000, 15, mmToTicks(230));
+    while(move_isBusy()) sendInfo();
+    _delay_ms(100);
+    take_glass(LEFT, DOWN);
+    _delay_ms(100);
+
+    // Go to the base
+    move_rotateAbsolute(2000, 30, -degreesToRadians(180));
+    while(move_isBusy()) sendInfo();
+
+    move_line(2000, 15, mmToTicks(500));
+    while(move_isBusy()) sendInfo();
+
+    grip_set(LEFT, OPEN);
+    grip_set(RIGHT, OPEN);
+    
+    // Now go to the cake
+    
+    // Go away from glasses
+    move_line(2000, 15, -mmToTicks(100));
+    while(move_isBusy()) sendInfo();
+
+    move_line(5000, 25, -mmToTicks(650));
+    while(move_isBusy()) sendInfo();
+
+    move_rotateAbsolute(2000, 30, -degreesToRadians(88));
+    while(move_isBusy()) sendInfo();
+
+    move_line(5000, 30, -mmToTicks(800));
+    while(move_isBusy()) sendInfo();
+    
+    paw_move(BIG, OPEN);
+    paw_move(SMALL, OPEN);
+
+    _cake = 1;
+    grip_set(LEFT, HOLD);
+    move_line(2000, 30, -mmToTicks(800));
+    _delay_ms(300);
+    while(move_isBusy())
+    {
+        if(sensor_read(&wall_front) > 2600)
+        {
+            break;
+        }
+    }
+
+    move_free();
+    chassis_write(0, 4000);
+    while(1)
+    {
+        if(1400 < sensor_read(&wall_rear))
+            break;
+    }
+
+    _cake = 1;
+    grip_set(LEFT, HOLD);
+    move_wall(10, 15, -mmToTicks(800));
+    while(move_isBusy())
+    {
+        if(sensor_read(&limiter_l) || sensor_read(&limiter_r))
+            break;
+    }
+
+    GPIO_SetBits(GPIOB, GPIO_Pin_15); // turn on lighting
+
+    int32_t pos_top = 0, pos_bottom = 0;
+
+    int32_t candles_top[] = {0, mmToTicks(200), mmToTicks(2*233), mmToTicks(3*258), mmToTicks(4*263), mmToTicks(5*264), mmToTicks(6*261), 999999, mmToTicks(1820)};
+    int32_t candles_bottom[] = {0, mmToTicks(175), mmToTicks(2*190), mmToTicks(3*175), mmToTicks(4*180), mmToTicks(5*184), mmToTicks(6*180), mmToTicks(7*179), mmToTicks(8*179), mmToTicks(9*178), mmToTicks(10*180), 999999}; //, mmToTicks(11*173)};
+
+    int32_t m_top = 0, m_bottom = 0;
+    
+    //int32_t measures_top[] = {2200, 6610, 9500, 12900, 15650, 18650, 999999};
+    //int32_t measures_top[] = {2200, 5840, 9410, 12980, 16550, 19120, 999999};
+
+    //int32_t measures_bottom[] = {100, 3125, 5600, 7900, 10400, 12400, 14800, 17200, 19600, 22000, 999999};
+    //int32_t measures_bottom[] = {100, 3000, 5478, 7956, 10434, 12912, 15390, 17868, 20346, 22824, 999999};
+
+    // Measures by math
+    int32_t measures_top[] = {mmToTicks(310), mmToTicks(570), mmToTicks(825), mmToTicks(1120), mmToTicks(1350), mmToTicks(1610), 999999};
+
+    int32_t measures_bottom[] = {mmToTicks(183), mmToTicks(373), mmToTicks(560), mmToTicks(747), mmToTicks(854), mmToTicks(1097), mmToTicks(1260), mmToTicks(1440), mmToTicks(1565), mmToTicks(1789), 999999};
 
     // To hit the candles:
     // 1. Clear angle (by crashing the wall)
@@ -400,13 +670,11 @@ void tactics_red(void)
 
     // 1.1. Go away from the wall
     move_line(4000, 20, mmToTicks(50));
-    while(move_isBusy());// sendInfo();
+    while(move_isBusy()) sendInfo();// sendInfo();
 
     // 2. Rotate CCW to about 15 degrees
     move_rotate(2000, 30, degreesToRadians(18));
-    while(move_isBusy());// sendInfo();
-
-    color = COLOR_BLUE;
+    while(move_isBusy()) sendInfo();// sendInfo();
 
     // 3. Hit the first candle
     if(candles_top[0] == 0)
@@ -419,7 +687,7 @@ void tactics_red(void)
     }
 
     move_rotate(2000, 30, -0.261799);
-    while(move_isBusy());// sendInfo();
+    while(move_isBusy()) sendInfo();// sendInfo();
 
     // 4. Reset the angle again
     move_refreshAngle();
@@ -429,7 +697,7 @@ void tactics_red(void)
     encoder_reset(1);
 
     uint8_t * measure = uartgrab_get(1);
-    move_wall(10, 100, mmToTicks(1850));
+    move_wall(15, 100, mmToTicks(1850));
     /*while(move_isBusy())
     {
         if(uart_read(1) == ' ')
@@ -453,7 +721,7 @@ void tactics_red(void)
         }
         if(aripPath >= measures_bottom[m_bottom] - mmToTicks(150))
         {
-            _detect = 50;
+            _detect = 30;
             led_on(3);
             
             if(((color == COLOR_RED) && (measure[0] & 3) == COLOR_BLUE) ||
@@ -475,94 +743,16 @@ void tactics_red(void)
             pos_bottom++;
             paw_move(SMALL, BLOW);
         }
+
+        _delay_ms(100);
     }
 
     move_rotate(3000, 30, -degreesToRadians(25));
-    while(move_isBusy());
+    while(move_isBusy()) sendInfo();
 
     paw_move(SMALL, BLOW);
     _delay_ms(300);
     paw_move(SMALL, OPEN);
-}
-
-void tactics_blue(void)
-{
-    // 1. Clear angle
-    move_refreshAngle();
-
-    // Refresh our correct position
-    updateX(mmToTicks(80));
-    updateY(mmToTicks(1400));
-    
-    // 2. Collecting glasses
-    // 2.1. Go away from the start zone
-    move_line(2000, 10, mmToTicks(30));
-    while(move_isBusy());
-
-    move_rotateAbsolute(1500, 20, -degreesToRadians(20));
-    while(move_isBusy());
-
-    // Collect 1st and 2nd glasses (to 1st floor)
-    move_line(2500, 20, mmToTicks(1050));
-    while(move_isBusy());
-    _delay_ms(100);
-    grip_set(LEFT, HOLD);
-    grip_set(RIGHT, HOLD);
-    _delay_ms(100);
-
-    // Collect 3rd glass
-    move_rotateAbsolute(2000, 20, -degreesToRadians(52));
-    elevator_move(UP);
-    while(move_isBusy());
-
-    move_line(2000, 15, mmToTicks(250));
-    while(move_isBusy());
-    _delay_ms(100);
-    take_glass(LEFT, DOWN);
-    _delay_ms(100);
-
-    // Collect 4th glass
-    move_rotateAbsolute(2000, 30, -degreesToRadians(115));
-    elevator_move(UP);
-    while(move_isBusy());
-
-    move_line(2000, 15, mmToTicks(190));
-    while(move_isBusy());
-    _delay_ms(100);
-    take_glass(LEFT, DOWN);
-    _delay_ms(100);
-
-    // Collect 5th glass
-    move_rotateAbsolute(2000, 30, -degreesToRadians(215));
-    elevator_move(UP);
-    while(move_isBusy());
-
-    move_line(2000, 15, mmToTicks(140));
-    while(move_isBusy());
-    _delay_ms(100);
-    take_glass(RIGHT, DOWN);
-    _delay_ms(100);
-
-    // Collect 6th glass
-    move_rotateAbsolute(2000, 30, -degreesToRadians(155));
-    elevator_move(UP);
-    while(move_isBusy());
-
-    move_line(2000, 15, mmToTicks(140));
-    while(move_isBusy());
-    _delay_ms(100);
-    take_glass(LEFT, DOWN);
-    _delay_ms(100);
-
-    // Go to the base
-    move_rotateAbsolute(2000, 30, -degreesToRadians(180));
-    while(move_isBusy());
-
-    move_line(2000, 15, mmToTicks(500));
-    while(move_isBusy());
-
-    grip_set(LEFT, OPEN);
-    grip_set(RIGHT, OPEN);
 }
 
 /*

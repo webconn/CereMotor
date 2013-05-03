@@ -6,12 +6,27 @@
 int32_t MinBrakeDelta = 0;
 int32_t BrakeStart = 0;
 volatile uint8_t relativeDirection = 0; // direction to monitor via ODetect
-uint8_t _move_save = 1, stabMode = 0;
+uint8_t _move_save = 1, stabMode = 0, _move_stable = 0;
+float _rel_angle = 0;
 
-int moveMode = 0;
+volatile int moveMode = 0;
 
 extern void _delay_ms(uint32_t ms);
 void _move_clear(void);
+
+int32_t _rel_l = 0, _rel_r = 0;
+
+void move_setRelativePosition(void)
+{
+    _rel_l = encoder_getPath(1);
+    _rel_r = encoder_getPath(0);
+    _rel_angle = getAngle();
+}
+
+int move_isStable(void)
+{
+    return _move_stable > 20;
+}
 
 void move_saveSwitch(FunctionalState state)
 {
@@ -147,10 +162,17 @@ inline void _move_stay(void)
 
     if(_move_save)
     {
-        int32_t leftPath = encoder_getPath(1);
-        int32_t rightPath = encoder_getPath(0);
+        int32_t leftPath = encoder_getPath(1) - _rel_l;
+        int32_t rightPath = encoder_getPath(0) - _rel_r;
 
         chassis_write(-16 * leftPath, -16 * rightPath);
+
+        if(getAngle() - _rel_angle >= -0.00075 && getAngle() - _rel_angle <= 0.00025)
+            _move_stable++;
+        else
+            _move_stable = 0;
+
+        _rel_angle = getAngle();
     }
 }
 
@@ -382,6 +404,7 @@ inline void _move_rotate(void)
         // we still accelerating but reached middle of the way
         if((flag_GetMinBrake == 2 && (_destPath - midPath) <= MinBrakePath) || (flag_GetMinBrake != 2 && (_destPath - midPath) <= midPath))
         {
+            relativeDirection = 0; // we do not need ODetect anymore
             moveMode = 4;
             rqSpeed = midDelta - 2 * rqSpeed;
             if(flag_GetMinBrake != 2) deltaSpeed = midPath / numMeasures;
@@ -535,59 +558,15 @@ void _move_wall(void)
 
     int32_t aripPath = (leftPath + rightPath) / 2; // sum and divide by 2
 
-    /*if(moveMode == 7) // normal operation (no brakes)
+    // If we reached end, stop engines and shut algo down
+    if(aripPath >= _destPath)
     {
-        // 1. Calculate middle acceleration
-        if(!_midAcc && acceleration > 0)
-        {
-            _midAcc = acceleration;
-        }
-        else if(acceleration > _midAcc)
-        {
-            _midAcc = acceleration;
-        }
-
-        // Increase PWM
-        if(_movePWM < _destPWM) // acceleration
-        {
-            _movePWM += _moveAcc;
-        }
-        else // start normal operaion
-        {
-            _movePWM = _destPWM;
-        }
-
-        // Check if we need to brake
-        if((_destPath - aripPath) <= _accPath || (_accPath == 0 && (_destPath - aripPath) <= aripPath))
-        {
-            moveMode = 6;
-        }
-        
-        // Check acceleration: if accelerated, take the measure
-        if(acceleration <= 0 && !_accPath && _movePWM == _destPWM)
-        {
-            _accPath = aripPath;
-            _midAcc /= _numMeasures;
-        }
+        move_stop(); // stop engines
+        _movePWM = 0;
+        _moveAcc = 0;
+        _move_stay(); // stop right now, I said!
+        return;
     }
-    else 
-    {
-        // At this stage we need to control encoders speed
-        if(leftSpeed > 5 && rightSpeed > 5 && acceleration >= -_midAcc) // speed down while we should move
-            _movePWM -= _moveAcc;
-*/
-        
-        // If we reached end, stop engines and shut algo down
-        if(aripPath >= _destPath)
-        {
-            move_stop(); // stop engines
-            _movePWM = 0;
-            _accPath = 0;
-            _midAcc = 0;
-            _move_stay(); // stop right now, I said!
-            return;
-        }
-    //}
 
     // Stabilisation by barrier rangefinders
     // We think that ON-state of rangefinder is
@@ -595,25 +574,59 @@ void _move_wall(void)
     // close to wall)
     // rf1 is front, rf2 is rear
 
-    // 1. Read sensors values and calculate errors
-    int32_t error = 0;
-    if(!sign)
-        error = 1400 - sensor_read(_rf_rear);
-    else
-        error = 2800 - sensor_read(_rf_front);
-
-    // If error is positive, wall is far
-    // If error is negative, wall is too close
-
-    // Now check out the speed
     if(leftSpeed + rightSpeed > 2 * _speed)
         _movePWM -= _moveAcc;
     else
         _movePWM += _moveAcc;
 
+    // 1. Read sensors values and calculate errors
+    int32_t error = 0;
+    if(!sign)
+    {
+        error = (1400 - sensor_read(_rf_rear));
+        pid_update(error, _movePWM, &rightPWM, &leftPWM);
+    }
+    else
+    {
+        error = (2700 - sensor_read(_rf_front)) - ((1400 - sensor_read(_rf_rear)) / 2);
+        leftPWM = _movePWM - error;
+        rightPWM = _movePWM + error;
+        //pid_update(error, _movePWM, &rightPWM, &leftPWM);
+        /*
+        int32_t state = ((1400 < sensor_read(_rf_rear)) << 1) | ((2700 < sensor_read(_rf_front)));
+
+        if(state >= 2) // go away from wall
+        {
+            state++;
+        }
+        state -= 2; // now we have coefficient for movement direction and intensivity
+
+        
+        if(state != _oldState)
+            integral = 0;
+        _oldState = state;
+
+        integral += state;
+
+        if(state > 0)
+        {
+            leftPWM = _speed;
+            rightPWM =  -integral;
+        }
+        else
+        {
+            state = -state;
+            leftPWM = -integral;
+            rightPWM = _speed;
+        }*/
+    }
+
+    // If error is positive, wall is far
+    // If error is negative, wall is too close
+
+    // Now check out the speed
     // Multiply errors by coefficient
 
-    pid_update(error, _movePWM, &rightPWM, &leftPWM);
 
     // Calculate left and right values
     if(sign) // move backward
@@ -654,11 +667,6 @@ void _move_wall(void)
         leftPWM = -integral;
         rightPWM = _movePWM;
     }*/
-
-   /* if(sign)
-        chassis_write(-leftPWM, -rightPWM);
-    else
-        chassis_write(leftPWM, rightPWM);*/
 }
 
 // Debug purposes
@@ -770,7 +778,7 @@ void move_rotateAbsolute(int32_t pwm, int32_t acceleration, float dAngle)
     _destPWM = pwm;
     _moveAcc = acceleration;
 
-    relativeDirection = DIR_LEFT;
+    //relativeDirection = DIR_LEFT;
 
     rqAngle = dAngle;
     
@@ -813,7 +821,6 @@ void move_wall(int32_t speed, int32_t acceleration, int32_t path)
     moveMode = 7;
 }
 
-
 /**
  * Clear movement parametres
  */
@@ -846,8 +853,6 @@ void _move_clear(void)
 void move_stop(void)
 {
     // Just stop the engines and clear moveMode
-    encoder_reset(0);
-    encoder_reset(1);
     moveMode = 0;
     _move_stay();
 }
@@ -866,7 +871,7 @@ uint8_t move_getRelativeDirection(void)
  * Moving pause
  */
 
-struct {
+volatile struct {
     uint32_t moveMode;
     int32_t leftPath;
     int32_t rightPath;
@@ -883,9 +888,9 @@ void move_pause(void)
         _move_paused = 1;
         // 1. Collect required data
         _move_dump.moveMode = moveMode;
-        _move_dump.leftPath = encoder_getPath(1);
-        _move_dump.rightPath = encoder_getPath(0);
         _move_dump.pid = pid_dumpData();
+
+        move_setRelativePosition();
 
         move_stop();
     }
@@ -898,12 +903,14 @@ void move_pause(void)
 void move_continue(void)
 {
     // Turn data back
-    moveMode = _move_dump.moveMode;
-    encoder_setPath(1, _move_dump.leftPath);
-    encoder_setPath(0, _move_dump.rightPath);
-    _move_paused = 0;
-    _move_save = 0;
-    pid_config(&_move_dump.pid);
+    if(_move_paused)
+    {
+        if(_move_dump.moveMode > 0)
+            moveMode = _move_dump.moveMode;
+        _move_paused = 0;
+        _move_save = 0;
+        pid_config((pidConfig *) &_move_dump.pid);
+    }
 }
 
 /**
@@ -991,7 +998,7 @@ void move_refreshAngle(void)
 int move_isBusy(void)
 {
     if(_move_paused)
-        return 1;
+        return 666;
     else
         return moveMode;
 }

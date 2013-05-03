@@ -37,6 +37,7 @@ void move_continue(void);
 void move_saveSwitch(FunctionalState state);
 int32_t move_getPWM(uint8_t val);
 int move_isBusy(void);
+int move_isStable(void);
 uint8_t move_getRelativeDirection(void);
 
 void move_setMinBrakeDelta(int32_t value);
