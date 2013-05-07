@@ -277,7 +277,15 @@ int main(void)
     //led_on(2);
     //led_on(3);
 
-    while(sensor_read(&shmorgalka));;; // shmorgalka
+    while(sensor_read(&shmorgalka))
+    {
+        if(sensor_read(&button1))
+        {
+            grip_set(LEFT, HOLD);
+            GPIO_SetBits(GPIOB, GPIO_Pin_15);
+            while(1);;;
+        }
+    }// shmorgalka
     starter = 1;
     move_saveSwitch(DISABLE);
     
