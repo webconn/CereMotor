@@ -32,6 +32,7 @@ volatile uint32_t _delay = 0, _blowUp = 0, _blowDown = 0, _detect = 0, _cake = 0
 volatile uint32_t time = 0;
 volatile uint32_t starter = 0;
 volatile uint8_t flag_lock = 0;
+volatile uint16_t _wall_time = 0;
 
 /**
  * Periphery global variables
@@ -87,6 +88,9 @@ void SysTick_Handler(void)
         _detect--;
     else if(_detect == 0 && _cake)
         led_off(3);
+
+    if(_wall_time > 0)
+        _wall_time--;
 
     if(starter == 1)
     {
@@ -415,11 +419,12 @@ void tactics_red(void)
 
     _cake = 1;
     grip_set(LEFT, HOLD);
+    _wall_time = 300; // start wall watchdog
     move_line(2000, 30, -mmToTicks(1200));
     _delay_ms(300);
     while(move_isBusy())
     {
-        if(sensor_read(&wall_front) > 2600)
+        if(sensor_read(&wall_front) > 2600 || _wall_time == 0)
         {
             break;
         }
@@ -558,7 +563,7 @@ void tactics_blue(void)
     _delay_ms(100);
 
     // Collect 4th glass
-    move_rotateAbsolute(4000, 50, -degreesToRadians(115));
+    move_rotateAbsolute(2500, 30, -degreesToRadians(115));
     elevator_move(UP);
     while(move_isBusy()) sendInfo();
 
@@ -580,7 +585,7 @@ void tactics_blue(void)
     _delay_ms(100);
 
     // Collect 6th glass
-    move_rotateAbsolute(3000, 50, -degreesToRadians(145));
+    move_rotateAbsolute(3000, 50, -degreesToRadians(135));
     elevator_move(UP);
     while(move_isBusy()) sendInfo();
 
@@ -613,7 +618,7 @@ void tactics_blue(void)
     move_line(5000, 25, -mmToTicks(650));
     while(move_isBusy()) sendInfo();
 
-    move_rotateAbsolute(2000, 30, -degreesToRadians(84));
+    move_rotateAbsolute(2000, 30, -degreesToRadians(83));
     while(move_isBusy()) sendInfo();
 
     move_line(5000, 30, -mmToTicks(800));
@@ -624,11 +629,12 @@ void tactics_blue(void)
 
     _cake = 1;
     grip_set(LEFT, HOLD);
+    _wall_time = 300; // start wall-detector watchdog
     move_line(2000, 30, -mmToTicks(800));
     _delay_ms(300);
     while(move_isBusy())
     {
-        if(sensor_read(&wall_front) > 2600)
+        if(sensor_read(&wall_front) > 2600 || _wall_time == 0)
         {
             break;
         }
