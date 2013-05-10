@@ -83,9 +83,9 @@ void SysTick_Handler(void)
         paw_move(SMALL, OPEN);
     }
 
-    if(_detect > 0)
+    if(_detect > 0 && _cake)
         _detect--;
-    else if(_detect == 0)
+    else if(_detect == 0 && _cake)
         led_off(3);
 
     if(starter == 1)
@@ -127,7 +127,7 @@ static inline void _init_io(void)
     odetect_init();
 
     // Init ColorDetector (at UART1)
-    uartgrab_init(1, 115200, 1); // UART1 at 115200 receives 1 byte
+    uartgrab_init(1, 115200, 3); // UART1 at 115200 receives 1 byte
 
     __enable_irq();
 
@@ -363,7 +363,7 @@ void tactics_red(void)
     _delay_ms(100);
 
     // Collect 5th glass
-    move_rotateAbsolute(2000, 30, degreesToRadians(235));
+    move_rotateAbsolute(2000, 30, degreesToRadians(230));
     elevator_move(UP);
     while(move_isBusy()) sendInfo();
 
@@ -419,6 +419,7 @@ void tactics_red(void)
         {
             break;
         }
+        sendInfo();
     }
 
     move_free();
@@ -427,6 +428,7 @@ void tactics_red(void)
     {
         if(1400 < sensor_read(&wall_rear))
             break;
+        sendInfo();
     }
 
     _cake = 1;
@@ -436,23 +438,18 @@ void tactics_red(void)
     {
         if(sensor_read(&limiter_l) || sensor_read(&limiter_r))
             break;
+        sendInfo();
     }
 
     GPIO_SetBits(GPIOB, GPIO_Pin_15); // turn on lighting
 
     int32_t pos_top = 0, pos_bottom = 0;
 
-    int32_t candles_top[] = {0, mmToTicks(200), mmToTicks(2*233), mmToTicks(3*258), mmToTicks(4*263), mmToTicks(5*264), mmToTicks(6*261), 999999, mmToTicks(1820)};
-    int32_t candles_bottom[] = {0, mmToTicks(175), mmToTicks(2*190), mmToTicks(3*175), mmToTicks(4*180), mmToTicks(5*184), mmToTicks(6*180), mmToTicks(7*179), mmToTicks(8*179), mmToTicks(9*178), mmToTicks(10*180), 999999}; //, mmToTicks(11*173)};
+    int32_t candles_top[] = {mmToTicks(200), mmToTicks(2*233), mmToTicks(3*258), mmToTicks(4*263), mmToTicks(5*264), mmToTicks(6*261), mmToTicks(1820), 999999};
+    int32_t candles_bottom[] = {mmToTicks(175), mmToTicks(2*190), mmToTicks(3*175), mmToTicks(4*180), mmToTicks(5*184), mmToTicks(6*180), mmToTicks(7*179), mmToTicks(8*179), mmToTicks(9*178), mmToTicks(10*180), mmToTicks(11*173), 999999};
 
     int32_t m_top = 0, m_bottom = 0;
     
-    //int32_t measures_top[] = {2200, 6610, 9500, 12900, 15650, 18650, 999999};
-    //int32_t measures_top[] = {2200, 5840, 9410, 12980, 16550, 19120, 999999};
-
-    //int32_t measures_bottom[] = {100, 3125, 5600, 7900, 10400, 12400, 14800, 17200, 19600, 22000, 999999};
-    //int32_t measures_bottom[] = {100, 3000, 5478, 7956, 10434, 12912, 15390, 17868, 20346, 22824, 999999};
-
     // Measures by math
     int32_t measures_top[] = {mmToTicks(310), mmToTicks(570), mmToTicks(825), mmToTicks(1120), mmToTicks(1350), mmToTicks(1610), 999999};
 
@@ -474,14 +471,14 @@ void tactics_red(void)
         int32_t aripPath = (encoder_getPath(1) + encoder_getPath(0)) / 2;
         
         // 1. Make a measure
-        if(aripPath >= measures_top[m_top] - mmToTicks(150))
+        if(aripPath >= measures_top[m_top] - mmToTicks(150) && measure[1] == 1)
         {
             if(((color == COLOR_RED) && (measure[0] >> 2) == COLOR_BLUE) ||
                 ((color == COLOR_BLUE) && (measure[0] >> 2) != COLOR_BLUE))
                 pos_top++;
             m_top++;
         }
-        if(aripPath >= measures_bottom[m_bottom] - mmToTicks(150))
+        if((aripPath >= measures_bottom[m_bottom] - mmToTicks(150)) && (pos_bottom < 4 || pos_bottom > 7) && measure[2] == 1)
         {
             _detect = 30;
             led_on(3);
@@ -593,7 +590,7 @@ void tactics_blue(void)
     move_rotateAbsolute(2000, 30, -degreesToRadians(180));
     while(move_isBusy()) sendInfo();
 
-    move_line(2000, 15, mmToTicks(500));
+    move_line(2000, 15, mmToTicks(490));
     while(move_isBusy()) sendInfo();
 
     grip_set(LEFT, OPEN);
@@ -608,7 +605,7 @@ void tactics_blue(void)
     move_line(5000, 25, -mmToTicks(650));
     while(move_isBusy()) sendInfo();
 
-    move_rotateAbsolute(2000, 30, -degreesToRadians(88));
+    move_rotateAbsolute(2000, 30, -degreesToRadians(84));
     while(move_isBusy()) sendInfo();
 
     move_line(5000, 30, -mmToTicks(800));
@@ -627,6 +624,7 @@ void tactics_blue(void)
         {
             break;
         }
+        sendInfo();
     }
 
     move_free();
@@ -635,6 +633,7 @@ void tactics_blue(void)
     {
         if(1400 < sensor_read(&wall_rear))
             break;
+        sendInfo();
     }
 
     _cake = 1;
@@ -644,6 +643,7 @@ void tactics_blue(void)
     {
         if(sensor_read(&limiter_l) || sensor_read(&limiter_r))
             break;
+        sendInfo();
     }
 
     GPIO_SetBits(GPIOB, GPIO_Pin_15); // turn on lighting
@@ -655,12 +655,6 @@ void tactics_blue(void)
 
     int32_t m_top = 0, m_bottom = 0;
     
-    //int32_t measures_top[] = {2200, 6610, 9500, 12900, 15650, 18650, 999999};
-    //int32_t measures_top[] = {2200, 5840, 9410, 12980, 16550, 19120, 999999};
-
-    //int32_t measures_bottom[] = {100, 3125, 5600, 7900, 10400, 12400, 14800, 17200, 19600, 22000, 999999};
-    //int32_t measures_bottom[] = {100, 3000, 5478, 7956, 10434, 12912, 15390, 17868, 20346, 22824, 999999};
-
     // Measures by math
     int32_t measures_top[] = {mmToTicks(310), mmToTicks(570), mmToTicks(825), mmToTicks(1120), mmToTicks(1350), mmToTicks(1610), 999999};
 
@@ -720,14 +714,14 @@ void tactics_blue(void)
         int32_t aripPath = (encoder_getPath(1) + encoder_getPath(0)) / 2;
         
         // 1. Make a measure
-        if(aripPath >= measures_top[m_top] - mmToTicks(150))
+	    if(aripPath >= measures_top[m_top] - mmToTicks(150) && measure[1] == 1)
         {
             if(((color == COLOR_RED) && (measure[0] >> 2) == COLOR_BLUE) ||
                 ((color == COLOR_BLUE) && (measure[0] >> 2) != COLOR_BLUE))
                 pos_top++;
             m_top++;
         }
-        if(aripPath >= measures_bottom[m_bottom] - mmToTicks(150))
+	    if((aripPath >= measures_bottom[m_bottom] - mmToTicks(150)) && (pos_bottom < 4 || pos_bottom > 7) && measure[2] == 1)
         {
             _detect = 30;
             led_on(3);
