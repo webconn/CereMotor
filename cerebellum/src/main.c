@@ -391,8 +391,12 @@ void tactics_red(void)
     move_line(2000, 15, mmToTicks(500));
     while(move_isBusy()) sendInfo();
 
+    _delay_ms(500);
+
     grip_set(LEFT, OPEN);
     grip_set(RIGHT, OPEN);
+
+    _delay_ms(300);
     
     // Now go to the cake
     
@@ -453,7 +457,7 @@ void tactics_red(void)
     // Measures by math
     int32_t measures_top[] = {mmToTicks(310), mmToTicks(570), mmToTicks(825), mmToTicks(1120), mmToTicks(1350), mmToTicks(1610), 999999};
 
-    int32_t measures_bottom[] = {mmToTicks(183), mmToTicks(373), mmToTicks(560), mmToTicks(747), mmToTicks(854), mmToTicks(1097), mmToTicks(1260), mmToTicks(1440), mmToTicks(1565), mmToTicks(1789), 999999};
+    int32_t measures_bottom[] = {mmToTicks(183), mmToTicks(373), mmToTicks(560), /*mmToTicks(747), mmToTicks(854), mmToTicks(1097), mmToTicks(1260),*/ mmToTicks(1440), mmToTicks(1565), mmToTicks(1789), 999999};
 
     // To hit the candles:
     // 1. Clear angle (by crashing the wall)
@@ -471,14 +475,14 @@ void tactics_red(void)
         int32_t aripPath = (encoder_getPath(1) + encoder_getPath(0)) / 2;
         
         // 1. Make a measure
-        if(aripPath >= measures_top[m_top] - mmToTicks(150) && measure[1] == 1)
+        if(aripPath + mmToTicks(170) >= measures_top[m_top] && measure[1] == 1)
         {
             if(((color == COLOR_RED) && (measure[0] >> 2) == COLOR_BLUE) ||
                 ((color == COLOR_BLUE) && (measure[0] >> 2) != COLOR_BLUE))
                 pos_top++;
             m_top++;
         }
-        if((aripPath >= measures_bottom[m_bottom] - mmToTicks(150)) && (pos_bottom < 4 || pos_bottom > 7) && measure[2] == 1)
+        if((aripPath + mmToTicks(170) >= measures_bottom[m_bottom]) && (pos_bottom < 4 || pos_bottom > 7) && measure[2] == 1)
         {
             _detect = 30;
             led_on(3);
@@ -590,11 +594,15 @@ void tactics_blue(void)
     move_rotateAbsolute(2000, 30, -degreesToRadians(180));
     while(move_isBusy()) sendInfo();
 
-    move_line(2000, 15, mmToTicks(490));
+    move_line(2000, 15, mmToTicks(475));
     while(move_isBusy()) sendInfo();
+
+    _delay_ms(500);
 
     grip_set(LEFT, OPEN);
     grip_set(RIGHT, OPEN);
+
+    _delay_ms(300);
     
     // Now go to the cake
     
@@ -658,7 +666,7 @@ void tactics_blue(void)
     // Measures by math
     int32_t measures_top[] = {mmToTicks(310), mmToTicks(570), mmToTicks(825), mmToTicks(1120), mmToTicks(1350), mmToTicks(1610), 999999};
 
-    int32_t measures_bottom[] = {mmToTicks(183), mmToTicks(373), mmToTicks(560), mmToTicks(747), mmToTicks(854), mmToTicks(1097), mmToTicks(1260), mmToTicks(1440), mmToTicks(1565), mmToTicks(1789), 999999};
+    int32_t measures_bottom[] = {mmToTicks(183), mmToTicks(373), mmToTicks(560), /*mmToTicks(747), mmToTicks(854), mmToTicks(1097), mmToTicks(1260),*/ mmToTicks(1420), mmToTicks(1545), mmToTicks(1789), 999999};
 
     // To hit the candles:
     // 1. Clear angle (by crashing the wall)
@@ -714,14 +722,14 @@ void tactics_blue(void)
         int32_t aripPath = (encoder_getPath(1) + encoder_getPath(0)) / 2;
         
         // 1. Make a measure
-	    if(aripPath >= measures_top[m_top] - mmToTicks(150) && measure[1] == 1)
+	    if(aripPath + mmToTicks(170) >= measures_top[m_top] && measure[1] == 1)
         {
             if(((color == COLOR_RED) && (measure[0] >> 2) == COLOR_BLUE) ||
                 ((color == COLOR_BLUE) && (measure[0] >> 2) != COLOR_BLUE))
                 pos_top++;
             m_top++;
         }
-	    if((aripPath >= measures_bottom[m_bottom] - mmToTicks(150)) && (pos_bottom < 4 || pos_bottom > 7) && measure[2] == 1)
+	    if((aripPath + mmToTicks(170) >= measures_bottom[m_bottom]) && (pos_bottom < 4 || pos_bottom > 7) && measure[2] == 1)
         {
             _detect = 30;
             led_on(3);
