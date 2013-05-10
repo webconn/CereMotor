@@ -324,16 +324,16 @@ void tactics_red(void)
     
     // 2. Collecting glasses
     // 2.1. Go away from the start zone
-    move_line(2000, 10, mmToTicks(30));
+    move_line(2000, 20, mmToTicks(30));
     while(move_isBusy()) sendInfo();
 
-    move_rotateAbsolute(1500, 20, degreesToRadians(20));
+    move_rotateAbsolute(3000, 40, degreesToRadians(20));
     while(move_isBusy()) sendInfo();
 
     // Collect 1st and 2nd glasses (to 1st floor)
-    move_line(2500, 20, mmToTicks(950));
+    move_line(3500, 20, mmToTicks(950));
     while(move_isBusy()) sendInfo();
-    move_line(1500, 20, mmToTicks(120));
+    move_line(2500, 20, mmToTicks(120));
     while(move_isBusy()) sendInfo();
     _delay_ms(300);
     grip_set(LEFT, HOLD);
@@ -341,44 +341,44 @@ void tactics_red(void)
     _delay_ms(300);
 
     // Collect 3rd glass
-    move_rotateAbsolute(2000, 20, degreesToRadians(52));
+    move_rotateAbsolute(4000, 40, degreesToRadians(52));
     elevator_move(UP);
     while(move_isBusy()) sendInfo();
 
-    move_line(2000, 15, mmToTicks(250));
+    move_line(3000, 25, mmToTicks(250));
     while(move_isBusy()) sendInfo();
     _delay_ms(100);
     take_glass(RIGHT, DOWN);
     _delay_ms(100);
 
     // Collect 4th glass
-    move_rotateAbsolute(2000, 30, degreesToRadians(115));
+    move_rotateAbsolute(4000, 50, degreesToRadians(115));
     elevator_move(UP);
     while(move_isBusy()) sendInfo();
 
-    move_line(2000, 15, mmToTicks(260));
+    move_line(3000, 25, mmToTicks(260));
     while(move_isBusy()) sendInfo();
     _delay_ms(100);
     take_glass(RIGHT, DOWN);
     _delay_ms(100);
 
     // Collect 5th glass
-    move_rotateAbsolute(2000, 30, degreesToRadians(230));
+    move_rotateAbsolute(3000, 40, degreesToRadians(230));
     elevator_move(UP);
     while(move_isBusy()) sendInfo();
 
-    move_line(2000, 15, mmToTicks(190));
+    move_line(3000, 25, mmToTicks(190));
     while(move_isBusy()) sendInfo();
     _delay_ms(100);
     take_glass(LEFT, DOWN);
     _delay_ms(100);
 
     // Collect 6th glass
-    move_rotateAbsolute(2000, 30, degreesToRadians(135));
+    move_rotateAbsolute(3000, 50, degreesToRadians(135));
     elevator_move(UP);
     while(move_isBusy()) sendInfo();
 
-    move_line(2000, 15, mmToTicks(230));
+    move_line(3000, 25, mmToTicks(230));
     while(move_isBusy()) sendInfo();
     _delay_ms(100);
     take_glass(RIGHT, DOWN);
@@ -530,16 +530,16 @@ void tactics_blue(void)
     
     // 2. Collecting glasses
     // 2.1. Go away from the start zone
-    move_line(2000, 10, mmToTicks(30));
+    move_line(4000, 20, mmToTicks(30));
     while(move_isBusy()) sendInfo();
 
-    move_rotateAbsolute(1500, 20, -degreesToRadians(20));
+    move_rotateAbsolute(3000, 40, -degreesToRadians(20));
     while(move_isBusy()) sendInfo();
 
     // Collect 1st and 2nd glasses (to 1st floor)
-    move_line(2500, 20, mmToTicks(950));
+    move_line(3500, 40, mmToTicks(950));
     while(move_isBusy()) sendInfo();
-    move_line(1500, 20, mmToTicks(120));
+    move_line(2100, 40, mmToTicks(120));
     while(move_isBusy()) sendInfo();
     _delay_ms(300);
     grip_set(LEFT, HOLD);
@@ -547,44 +547,44 @@ void tactics_blue(void)
     _delay_ms(300);
 
     // Collect 3rd glass
-    move_rotateAbsolute(2000, 20, -degreesToRadians(52));
+    move_rotateAbsolute(4000, 40, -degreesToRadians(52));
     elevator_move(UP);
     while(move_isBusy()) sendInfo();
 
-    move_line(2000, 15, mmToTicks(250));
+    move_line(3000, 25, mmToTicks(250));
     while(move_isBusy()) sendInfo();
     _delay_ms(100);
     take_glass(LEFT, DOWN);
     _delay_ms(100);
 
     // Collect 4th glass
-    move_rotateAbsolute(2000, 30, -degreesToRadians(115));
+    move_rotateAbsolute(4000, 50, -degreesToRadians(115));
     elevator_move(UP);
     while(move_isBusy()) sendInfo();
 
-    move_line(2000, 15, mmToTicks(260));
+    move_line(3000, 25, mmToTicks(260));
     while(move_isBusy()) sendInfo();
     _delay_ms(100);
     take_glass(LEFT, DOWN);
     _delay_ms(100);
 
     // Collect 5th glass
-    move_rotateAbsolute(2000, 30, -degreesToRadians(235));
+    move_rotateAbsolute(3000, 50, -degreesToRadians(235));
     elevator_move(UP);
     while(move_isBusy()) sendInfo();
 
-    move_line(2000, 15, mmToTicks(190));
+    move_line(3000, 25, mmToTicks(190));
     while(move_isBusy()) sendInfo();
     _delay_ms(100);
     take_glass(RIGHT, DOWN);
     _delay_ms(100);
 
     // Collect 6th glass
-    move_rotateAbsolute(2000, 30, -degreesToRadians(145));
+    move_rotateAbsolute(3000, 50, -degreesToRadians(145));
     elevator_move(UP);
     while(move_isBusy()) sendInfo();
 
-    move_line(2000, 15, mmToTicks(230));
+    move_line(3000, 25, mmToTicks(230));
     while(move_isBusy()) sendInfo();
     _delay_ms(100);
     take_glass(LEFT, DOWN);
