@@ -318,7 +318,6 @@ void sendInfo(void)
 
 void tactics_red(void)
 {
-    move_wall(10, 20, mmToTicks(400));
     // 1. Clear angle
     move_refreshAngle();
 
@@ -328,14 +327,20 @@ void tactics_red(void)
     
     // 2. Collecting glasses
     // 2.1. Go away from the start zone
-    move_line(2000, 20, mmToTicks(30));
+    /*move_line(2000, 20, mmToTicks(30));
     while(move_isBusy()) sendInfo();
 
     move_rotateAbsolute(3000, 40, degreesToRadians(20));
-    while(move_isBusy()) sendInfo();
+    while(move_isBusy()) sendInfo();*/
+
+    move_free();
+    chassis_write(0, 3000);
+    while(getAngle() <= degreesToRadians(20));;
+    move_rotateAbsolute(2000, 40, degreesToRadians(20));
+    while(move_isBusy());
 
     // Collect 1st and 2nd glasses (to 1st floor)
-    move_line(3500, 20, mmToTicks(950));
+    move_line(3500, 70, mmToTicks(950));
     while(move_isBusy()) sendInfo();
     move_line(2500, 20, mmToTicks(120));
     while(move_isBusy()) sendInfo();
@@ -535,14 +540,20 @@ void tactics_blue(void)
     
     // 2. Collecting glasses
     // 2.1. Go away from the start zone
-    move_line(4000, 20, mmToTicks(30));
+    /*move_line(4000, 20, mmToTicks(30));
     while(move_isBusy()) sendInfo();
 
     move_rotateAbsolute(3000, 40, -degreesToRadians(20));
-    while(move_isBusy()) sendInfo();
+    while(move_isBusy()) sendInfo();*/
+
+    move_free();
+    chassis_write(3000, 0);
+    while(getAngle() >= -degreesToRadians(20));;
+    move_rotateAbsolute(2000, 40, -degreesToRadians(20));
+    while(move_isBusy());
 
     // Collect 1st and 2nd glasses (to 1st floor)
-    move_line(3500, 40, mmToTicks(950));
+    move_line(3500, 70, mmToTicks(950));
     while(move_isBusy()) sendInfo();
     move_line(2100, 40, mmToTicks(120));
     while(move_isBusy()) sendInfo();
