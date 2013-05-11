@@ -250,6 +250,9 @@ static inline void _init_periph(void)
 void tactics_red(void);
 void tactics_blue(void);
 
+void preparation_red(void);
+void preparation_blue(void);
+
 int color = 0;
 
 #define degreesToRadians(dgrs) (dgrs*3.14159/180)
@@ -280,16 +283,33 @@ int main(void)
     led_on(1);
     //led_on(2);
     //led_on(3);
+    
+    // Preparation of start position
+    while(!sensor_read(&button1))
+    {
+        if(!sensor_read(&shmorgalka))
+            break; // if start position is not allowed
+    }
+
+    if(sensor_read(&shmorgalka))
+    {
+        _delay_ms(1000);
+        if(sensor_read(&field_select))
+            preparation_red();
+        else
+            preparation_blue();
+    }
+
 
     while(sensor_read(&shmorgalka))
-    {
+    /*{
         if(sensor_read(&button1))
         {
             grip_set(LEFT, HOLD);
             GPIO_SetBits(GPIOB, GPIO_Pin_15);
             while(1);;;
         }
-    }// shmorgalka
+    }// shmorgalka*/
     starter = 1;
     move_saveSwitch(DISABLE);
     
@@ -316,7 +336,10 @@ void sendInfo(void)
     uart_send(1, '\n');
 }
 
-void tactics_red(void)
+int32_t _ready = 0;
+
+// Preparation block (set the start position)
+void preparation_red(void)
 {
     // 1. Clear angle
     move_refreshAngle();
@@ -327,17 +350,54 @@ void tactics_red(void)
     
     // 2. Collecting glasses
     // 2.1. Go away from the start zone
-    /*move_line(2000, 20, mmToTicks(30));
-    while(move_isBusy()) sendInfo();
-
-    move_rotateAbsolute(3000, 40, degreesToRadians(20));
-    while(move_isBusy()) sendInfo();*/
-
     move_free();
     chassis_write(0, 3000);
     while(getAngle() <= degreesToRadians(20));;
     move_rotateAbsolute(2000, 40, degreesToRadians(20));
     while(move_isBusy());
+
+    _ready = 1;
+}
+
+void preparation_blue(void)
+{
+    // 1. Clear angle
+    move_refreshAngle();
+
+    // Refresh our correct position
+    updateX(mmToTicks(80));
+    updateY(mmToTicks(1400));
+    
+    // 2. Collecting glasses
+    // 2.1. Go away from the start zone
+    move_free();
+    chassis_write(3000, 0);
+    while(getAngle() >= -degreesToRadians(20));;
+    move_rotateAbsolute(2000, 40, -degreesToRadians(20));
+    while(move_isBusy());
+
+    _ready = 1;
+}
+
+void tactics_red(void)
+{
+    if(!_ready)
+    {
+        // 1. Clear angle
+        move_refreshAngle();
+
+        // Refresh our correct position
+        updateX(mmToTicks(80));
+        updateY(mmToTicks(1400));
+        
+        // 2. Collecting glasses
+        // 2.1. Go away from the start zone
+        move_free();
+        chassis_write(0, 3000);
+        while(getAngle() <= degreesToRadians(20));;
+        move_rotateAbsolute(2000, 40, degreesToRadians(20));
+        while(move_isBusy());
+    }
 
     // Collect 1st and 2nd glasses (to 1st floor)
     move_line(3500, 70, mmToTicks(950));
@@ -469,9 +529,6 @@ void tactics_red(void)
 
     int32_t measures_bottom[] = {mmToTicks(183), mmToTicks(373), mmToTicks(560), /*mmToTicks(747), mmToTicks(854), mmToTicks(1097), mmToTicks(1260),*/ mmToTicks(1440), mmToTicks(1565), mmToTicks(1789), 999999};
 
-    // Memory about 1st half of cake
-    uint16_t mem_top, mem_bottom;
-
     // To hit the candles:
     // 1. Clear angle (by crashing the wall)
     move_refreshAngle();
@@ -488,54 +545,33 @@ void tactics_red(void)
         int32_t aripPath = (encoder_getPath(1) + encoder_getPath(0)) / 2;
         
         // 1. Make a measures
-        if(aripPath + mmToTicks(170) >= measures_top[m_top] && measure[1] == 1) 
+        if(aripPath + mmToTicks(170) >= measures_top[m_top] && measure[1] == 1)
         {
             if(((color == COLOR_RED) && (measure[0] >> 2) == COLOR_BLUE) ||
                 ((color == COLOR_BLUE) && (measure[0] >> 2) != COLOR_BLUE))
-            {
-                if(m_top < 3)
-                    pos_top++;
-                    mem_top |= (1<<m_top);
-                }
-                m_top++;
-            }
+                pos_top++;
+            m_top++;
         }
-
-        if((aripPath + mmToTicks(170) >= measures_bottom[m_bottom]) && measure[2] == 1)
+        if((aripPath + mmToTicks(170) >= measures_bottom[m_bottom]) && (pos_bottom < 4 || pos_bottom > 7) && measure[2] == 1)
         {
-            if(pos_bottom < 4 || pos_bottom > 7) // todo: remove on final
-            {
-                if(((color == COLOR_RED) && (measure[0] & 3) == COLOR_BLUE) ||
-                    ((color == COLOR_BLUE) && (measure[0] & 3) != COLOR_BLUE))
-                {
-                    if(m_bottom < 5)
-                    {
-                        pos_bottom++;
-                        mem_bottom |= (1<<m_bottom);
-                    }
-                    m_bottom++;
-                }
-            }
+            if(((color == COLOR_RED) && (measure[0] & 3) == COLOR_BLUE) ||
+                ((color == COLOR_BLUE) && (measure[0] & 3) != COLOR_BLUE))
+                pos_bottom++;
+            m_bottom++;
         }
 
         if(aripPath >= candles_top[pos_top])
         {
+            _blowUp = 50; // turn on delay to open the paw
+            paw_move(BIG, BLOW);
             pos_top++;
-            if(m_top >= 3 && (mem_top & (1 << (5-m_top)) > 0))
-            {
-                _blowUp = 50; // turn on delay to open the paw
-                paw_move(BIG, BLOW);
-            }
         }
 
         if(aripPath >= candles_bottom[pos_bottom])
         {
+            _blowDown = 50; // turn on delay to open the paw
+            paw_move(SMALL, BLOW);
             pos_bottom++;
-            if(m_bottom >= 5 && m_bottom <= 9 (mem_bottom & (1 << (9-m_bottom)) > 0))
-            {
-                _blowDown = 50; // turn on delay to open the paw
-                paw_move(SMALL, BLOW);
-            }
         }
 
         _delay_ms(100);
@@ -552,26 +588,23 @@ void tactics_red(void)
 
 void tactics_blue(void)
 {
-    // 1. Clear angle
-    move_refreshAngle();
+    if(!_ready)
+    {
+        // 1. Clear angle
+        move_refreshAngle();
 
-    // Refresh our correct position
-    updateX(mmToTicks(80));
-    updateY(mmToTicks(1400));
-    
-    // 2. Collecting glasses
-    // 2.1. Go away from the start zone
-    /*move_line(4000, 20, mmToTicks(30));
-    while(move_isBusy()) sendInfo();
-
-    move_rotateAbsolute(3000, 40, -degreesToRadians(20));
-    while(move_isBusy()) sendInfo();*/
-
-    move_free();
-    chassis_write(3000, 0);
-    while(getAngle() >= -degreesToRadians(20));;
-    move_rotateAbsolute(2000, 40, -degreesToRadians(20));
-    while(move_isBusy());
+        // Refresh our correct position
+        updateX(mmToTicks(80));
+        updateY(mmToTicks(1400));
+        
+        // 2. Collecting glasses
+        // 2.1. Go away from the start zone
+        move_free();
+        chassis_write(3000, 0);
+        while(getAngle() >= -degreesToRadians(20));;
+        move_rotateAbsolute(2000, 40, -degreesToRadians(20));
+        while(move_isBusy());
+    }
 
     // Collect 1st and 2nd glasses (to 1st floor)
     move_line(3500, 70, mmToTicks(950));
@@ -706,11 +739,6 @@ void tactics_blue(void)
 
     int32_t measures_bottom[] = {mmToTicks(183), mmToTicks(373), mmToTicks(560), /*mmToTicks(747), mmToTicks(854), mmToTicks(1097), mmToTicks(1260),*/ mmToTicks(1420), mmToTicks(1545), mmToTicks(1789), 999999};
 
-    uint16_t mem_top, mem_bottom;
-
-    mem_top = 0;
-    mem_bottom = 0;
-
     // To hit the candles:
     // 1. Clear angle (by crashing the wall)
     move_refreshAngle();
@@ -765,54 +793,33 @@ void tactics_blue(void)
         int32_t aripPath = (encoder_getPath(1) + encoder_getPath(0)) / 2;
         
         // 1. Make a measure
-        if(aripPath + mmToTicks(170) >= measures_top[m_top] && measure[1] == 1) 
+	    if(aripPath + mmToTicks(170) >= measures_top[m_top] && measure[1] == 1)
         {
             if(((color == COLOR_RED) && (measure[0] >> 2) == COLOR_BLUE) ||
                 ((color == COLOR_BLUE) && (measure[0] >> 2) != COLOR_BLUE))
-            {
-                if(m_top < 3)
-                    pos_top++;
-                    mem_top |= (1<<m_top);
-                }
-                m_top++;
-            }
+                pos_top++;
+            m_top++;
         }
-
-        if((aripPath + mmToTicks(170) >= measures_bottom[m_bottom]) && measure[2] == 1)
+	    if((aripPath + mmToTicks(170) >= measures_bottom[m_bottom]) && (pos_bottom < 4 || pos_bottom > 7) && measure[2] == 1)
         {
-            if(pos_bottom < 4 || pos_bottom > 7) // todo: remove on final
-            {
-                if(((color == COLOR_RED) && (measure[0] & 3) == COLOR_BLUE) ||
-                    ((color == COLOR_BLUE) && (measure[0] & 3) != COLOR_BLUE))
-                {
-                    if(m_bottom < 5)
-                    {
-                        pos_bottom++;
-                        mem_bottom |= (1<<m_bottom);
-                    }
-                    m_bottom++;
-                }
-            }
+            if(((color == COLOR_RED) && (measure[0] & 3) == COLOR_BLUE) ||
+                ((color == COLOR_BLUE) && (measure[0] & 3) != COLOR_BLUE))
+                pos_bottom++;
+            m_bottom++;
         }
 
         if(aripPath >= candles_top[pos_top])
         {
             pos_top++;
-            if(m_top >= 3 && (mem_top & (1 << (5-m_top)) > 0))
-            {
-                _blowUp = 50; // turn on delay to open the paw
-                paw_move(BIG, BLOW);
-            }
+            _blowUp = 50; // turn on delay to open the paw
+            paw_move(BIG, BLOW);
         }
 
         if(aripPath >= candles_bottom[pos_bottom])
         {
             pos_bottom++;
-            if(m_bottom >= 5 && m_bottom <= 9 (mem_bottom & (1 << (9-m_bottom)) > 0))
-            {
-                _blowDown = 50; // turn on delay to open the paw
+            _blowDown = 50; // turn on delay to open the paw
                 paw_move(SMALL, BLOW);
-            }
         }
 
         _delay_ms(100);
