@@ -469,6 +469,9 @@ void tactics_red(void)
 
     int32_t measures_bottom[] = {mmToTicks(183), mmToTicks(373), mmToTicks(560), /*mmToTicks(747), mmToTicks(854), mmToTicks(1097), mmToTicks(1260),*/ mmToTicks(1440), mmToTicks(1565), mmToTicks(1789), 999999};
 
+    // Memory about 1st half of cake
+    uint16_t mem_top, mem_bottom;
+
     // To hit the candles:
     // 1. Clear angle (by crashing the wall)
     move_refreshAngle();
@@ -484,37 +487,55 @@ void tactics_red(void)
     {
         int32_t aripPath = (encoder_getPath(1) + encoder_getPath(0)) / 2;
         
-        // 1. Make a measure
-        if(aripPath + mmToTicks(170) >= measures_top[m_top] && measure[1] == 1)
+        // 1. Make a measures
+        if(aripPath + mmToTicks(170) >= measures_top[m_top] && measure[1] == 1) 
         {
             if(((color == COLOR_RED) && (measure[0] >> 2) == COLOR_BLUE) ||
                 ((color == COLOR_BLUE) && (measure[0] >> 2) != COLOR_BLUE))
-                pos_top++;
-            m_top++;
+            {
+                if(m_top < 3)
+                    pos_top++;
+                    mem_top |= (1<<m_top);
+                }
+                m_top++;
+            }
         }
-        if((aripPath + mmToTicks(170) >= measures_bottom[m_bottom]) && (pos_bottom < 4 || pos_bottom > 7) && measure[2] == 1)
+
+        if((aripPath + mmToTicks(170) >= measures_bottom[m_bottom]) && measure[2] == 1)
         {
-            _detect = 30;
-            led_on(3);
-            
-            if(((color == COLOR_RED) && (measure[0] & 3) == COLOR_BLUE) ||
-                ((color == COLOR_BLUE) && (measure[0] & 3) != COLOR_BLUE))
-                pos_bottom++;
-            m_bottom++;
+            if(pos_bottom < 4 || pos_bottom > 7) // todo: remove on final
+            {
+                if(((color == COLOR_RED) && (measure[0] & 3) == COLOR_BLUE) ||
+                    ((color == COLOR_BLUE) && (measure[0] & 3) != COLOR_BLUE))
+                {
+                    if(m_bottom < 5)
+                    {
+                        pos_bottom++;
+                        mem_bottom |= (1<<m_bottom);
+                    }
+                    m_bottom++;
+                }
+            }
         }
 
         if(aripPath >= candles_top[pos_top])
         {
-            _blowUp = 50;
             pos_top++;
-            paw_move(BIG, BLOW);
+            if(m_top >= 3 && (mem_top & (1 << (5-m_top)) > 0))
+            {
+                _blowUp = 50; // turn on delay to open the paw
+                paw_move(BIG, BLOW);
+            }
         }
 
         if(aripPath >= candles_bottom[pos_bottom])
         {
-            _blowDown = 50;
             pos_bottom++;
-            paw_move(SMALL, BLOW);
+            if(m_bottom >= 5 && m_bottom <= 9 (mem_bottom & (1 << (9-m_bottom)) > 0))
+            {
+                _blowDown = 50; // turn on delay to open the paw
+                paw_move(SMALL, BLOW);
+            }
         }
 
         _delay_ms(100);
@@ -685,6 +706,11 @@ void tactics_blue(void)
 
     int32_t measures_bottom[] = {mmToTicks(183), mmToTicks(373), mmToTicks(560), /*mmToTicks(747), mmToTicks(854), mmToTicks(1097), mmToTicks(1260),*/ mmToTicks(1420), mmToTicks(1545), mmToTicks(1789), 999999};
 
+    uint16_t mem_top, mem_bottom;
+
+    mem_top = 0;
+    mem_bottom = 0;
+
     // To hit the candles:
     // 1. Clear angle (by crashing the wall)
     move_refreshAngle();
@@ -739,36 +765,54 @@ void tactics_blue(void)
         int32_t aripPath = (encoder_getPath(1) + encoder_getPath(0)) / 2;
         
         // 1. Make a measure
-	    if(aripPath + mmToTicks(170) >= measures_top[m_top] && measure[1] == 1)
+        if(aripPath + mmToTicks(170) >= measures_top[m_top] && measure[1] == 1) 
         {
             if(((color == COLOR_RED) && (measure[0] >> 2) == COLOR_BLUE) ||
                 ((color == COLOR_BLUE) && (measure[0] >> 2) != COLOR_BLUE))
-                pos_top++;
-            m_top++;
+            {
+                if(m_top < 3)
+                    pos_top++;
+                    mem_top |= (1<<m_top);
+                }
+                m_top++;
+            }
         }
-	    if((aripPath + mmToTicks(170) >= measures_bottom[m_bottom]) && (pos_bottom < 4 || pos_bottom > 7) && measure[2] == 1)
+
+        if((aripPath + mmToTicks(170) >= measures_bottom[m_bottom]) && measure[2] == 1)
         {
-            _detect = 30;
-            led_on(3);
-            
-            if(((color == COLOR_RED) && (measure[0] & 3) == COLOR_BLUE) ||
-                ((color == COLOR_BLUE) && (measure[0] & 3) != COLOR_BLUE))
-                pos_bottom++;
-            m_bottom++;
+            if(pos_bottom < 4 || pos_bottom > 7) // todo: remove on final
+            {
+                if(((color == COLOR_RED) && (measure[0] & 3) == COLOR_BLUE) ||
+                    ((color == COLOR_BLUE) && (measure[0] & 3) != COLOR_BLUE))
+                {
+                    if(m_bottom < 5)
+                    {
+                        pos_bottom++;
+                        mem_bottom |= (1<<m_bottom);
+                    }
+                    m_bottom++;
+                }
+            }
         }
 
         if(aripPath >= candles_top[pos_top])
         {
-            _blowUp = 50;
             pos_top++;
-            paw_move(BIG, BLOW);
+            if(m_top >= 3 && (mem_top & (1 << (5-m_top)) > 0))
+            {
+                _blowUp = 50; // turn on delay to open the paw
+                paw_move(BIG, BLOW);
+            }
         }
 
         if(aripPath >= candles_bottom[pos_bottom])
         {
-            _blowDown = 50;
             pos_bottom++;
-            paw_move(SMALL, BLOW);
+            if(m_bottom >= 5 && m_bottom <= 9 (mem_bottom & (1 << (9-m_bottom)) > 0))
+            {
+                _blowDown = 50; // turn on delay to open the paw
+                paw_move(SMALL, BLOW);
+            }
         }
 
         _delay_ms(100);
