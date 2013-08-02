@@ -41,6 +41,7 @@ int32_t __ebreak_rqAccelerationDivider = 0;
 int32_t __stop_coefficient = 16;
 int32_t __stop_baseLeft = 0;
 int32_t __stop_baseRight = 0;
+int32_t __stop_enableFlag = 0;
 
 // End of Global internal variables
 // ################################################
@@ -152,7 +153,18 @@ void move_setRqAngle(float angle)
  */
 void move_setRqPath(int32_t path)
 {
-    __user_rqPath = path;
+    if(path < 0)
+    {
+        __user_dirLeft = -1;
+        __user_dirRight = -1;
+        __user_rqPath = -path;
+    }
+    else
+    {
+        __user_dirLeft = 1;
+        __user_dirRight = 1;
+        __user_rqPath = path;
+    }
 }
 
 /**
@@ -163,6 +175,7 @@ void move_applyUserValues(void)
     __algo_rqSpeed = __user_rqSpeed;
     __algo_rqAcceleration = __user_rqAcceleration;
     __algo_rqAccelerationDivider = __user_rqAccelerationDivider;
+    __moveSpeed = __speed_calculator();
 }
 
 /**
@@ -174,22 +187,48 @@ void move_setStopZeroValues(void)
     __stop_baseRight = encoder_getPath(RIGHT);
 }
 
+/**
+ * Lock robot chassis
+ */
+void move_stopEnable(void)
+{
+    __stop_enableFlag = 1;
+}
+
+/**
+ * Unlock robot chassis
+ */
+void move_stopDisable(void)
+{
+    __stop_enableFlag = 0;
+}
+
+/**
+ * Chassis activity handler
+ * Simply returns 1 when required speed is not 0
+ */
+int move_isBusy(void)
+{
+    return __moveSpeed != 0;
+}
+
 // End of Public functions description
 // ################################################
 // Private (internal) functions description
 
 /**
- * Stop-mode speed calculator
+ * The most simple user-set speed calculator
  */
-int32_t __move_speedCalculator_stop(void)
+int32_t __move_speedCalculator_basic(void)
 {
-    return 0; // we should not move at all
+    return __user_rqSpeed;
 }
 
 /**
  * Basic user-set speed calculator
+ * It stops movement by path
  */
-int32_t __move_speedCalculator_basic(void)
+int32_t __move_speedCalculator_path(void)
 {
     if(__user_rqPath != 0 && __user_rqPath + __user_rqPath < encoder_getPath(0) + encoder_getPath(1))
         return 0;
@@ -204,6 +243,7 @@ int32_t __move_speedCalculator_basic(void)
 int32_t __move_speedCalculator_acc(void)
 {
     static int32_t speed = 0;
+    static int32_t counter = 9999999;
 
     int32_t left_path = encoder_getPath(LEFT);
     int32_t right_path = encoder_getPath(RIGHT);
@@ -227,23 +267,22 @@ int32_t __move_speedCalculator_acc(void)
         int32_t arip_path = (left_path + right_path) / 2;
 
         // Calculate current brake path
-        int32_t brake_path = speed * speed * (__algo_rqAccelerationDivider) / 2 *  __algo_rqAcceleration;
+        int32_t brake_path = (speed * speed * (__algo_rqAccelerationDivider)) / (2 *  __algo_rqAcceleration);
 
         // 1. Calculate required speed
         // 1.1. Planned brake
         if(arip_path + arip_path >= __user_rqPath && __user_rqPath - arip_path <= brake_path)
         {
-            __algo_rqSpeed = 5;
-            __algo_rqAcceleration *= 2;
+            __algo_rqSpeed = 1;
+            led_on(3);
         }
         // 1.2. Final brake
         if(__user_rqPath <= arip_path)
         {
-            led_on(3);
             speed = 0;
+            counter = 999999;
             __algo_rqSpeed = 0;
             __user_rqPath = 0;
-            move_setStopZeroValues(); // install zero-values
 
             return 0; // stop
         }
@@ -251,8 +290,7 @@ int32_t __move_speedCalculator_acc(void)
     }
 
     // 0. Internal counter for acceleration
-    static int32_t counter = 0;
-    if(counter == __algo_rqAccelerationDivider && speed != __algo_rqSpeed)
+    if(counter >= __algo_rqAccelerationDivider && speed != __algo_rqSpeed)
     {
         counter = 0; // now used for flag
 
@@ -315,10 +353,14 @@ int32_t __move_speedErrorCalculator(int32_t base)
  * Stop error calculator
  * Keeps the robot on its 'zero position'
  */
-void __move_stopCalculator_basic(int32_t * lPWM, int32_t * rPWM)
+void __move_stopCalculator_active(void)
 {
-    *lPWM = __stop_coefficient * (__stop_baseLeft - encoder_getPath(LEFT));
-    *rPWM = __stop_coefficient * (__stop_baseRight - encoder_getPath(RIGHT));
+    chassis_write(__stop_coefficient * (__stop_baseLeft - encoder_getPath(LEFT)), __stop_coefficient * (__stop_baseRight - encoder_getPath(RIGHT)));
+}
+
+void __move_stopCalculator_lock(void)
+{
+    chassis_break(8192, 8192);
 }
 
 /**
@@ -331,7 +373,10 @@ void __move_stopCalculator_basic(int32_t * lPWM, int32_t * rPWM)
  */
 int32_t __move_angleErrorCalculator(void)
 {
-    return pid_errorChassisAngle(__path_pid, coords_getAngle(), __user_rqAngle);
+    if(__user_dirLeft < 0 && __user_dirRight < 0)
+        return __path_pid->p_gain * (coords_getAngle() - __user_rqAngle);
+    else
+        return __path_pid->p_gain * (__user_rqAngle - coords_getAngle());
 }
 
 /**
@@ -344,7 +389,10 @@ int32_t __move_pathsErrorCalculator(void)
     int32_t right = encoder_getPath(RIGHT);
 
     // Return error
-    return pid_errorChassisSpeed(__path_pid, left, right);
+    if(__user_dirLeft < 0 && __user_dirRight < 0)
+        return right - left;
+    else
+        return left - right;
 }
 
 int32_t __move_pathErrorCalculator_stay(void)
@@ -370,7 +418,7 @@ void __move_correct(void)
     __moveSpeed = __speed_calculator();
 
     int32_t lPWM, rPWM;
-    if(__moveSpeed != 0)
+    if(__moveSpeed != 0 && !__stop_enableFlag)
     {
         // 1. Calculate base PWM according to speed error
         __movePWM = pid_correction(__speed_pid, __speed_error_calculator(__moveSpeed));
@@ -384,11 +432,12 @@ void __move_correct(void)
             lPWM = -lPWM;
         if(__user_dirRight < 0)
             rPWM = -rPWM;
+
+        chassis_write(lPWM, rPWM);
     }
-    else
+    else if(__stop_enableFlag)
     {
         // Stabilisation of "zero point"
-        __stop_calculator(&lPWM, &rPWM);
+        __stop_calculator();
     }
-    chassis_write(lPWM, rPWM);
 }

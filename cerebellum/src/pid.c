@@ -33,7 +33,6 @@ void pid_correctChassis(int32_t correction, int32_t base,  int32_t * pwm_l, int3
 
 int32_t pid_correction(pid_regulator_t * pid, int32_t error)
 {
-    error /= 8; // this is for more accuracy
     error *= pid->p_gain;
 
     // 1. Calculating integral

@@ -20,7 +20,7 @@
 // Refactored functions and defines
 typedef int32_t (*move_calculator_t)(void); // sets move_calculator type that contains pointer to a function
 typedef int32_t (*move_errorCalculator_t)(int32_t); // sets move error calculator
-typedef void (*move_stopCalculator_t)(int32_t *, int32_t *); // set 'zero position' error calculator (raw, w/o PID)
+typedef void (*move_stopCalculator_t)(void); // set 'zero position' error calculator (raw, w/o PID)
 
 void move_setPathPID(pid_regulator_t * pid);
 void move_setSpeedPID(pid_regulator_t * pid);
@@ -40,20 +40,26 @@ void move_applyUserValues(void);
 
 void move_setStopZeroValues(void);
 void move_setStopCoefficient(int32_t coeff);
+void move_stopEnable(void);
+void move_stopDisable(void);
+
+int move_isBusy(void);
 
 // General-purpose speed calculators
-int32_t __move_speedCalculator_stop(void);
 int32_t __move_speedCalculator_basic(void);
+int32_t __move_speedCalculator_path(void);
 int32_t __move_speedCalculator_acc(void);
 
 // Error calculators
 int32_t __move_speedErrorCalculator(int32_t base);
+
 int32_t __move_pathsErrorCalculator(void);
 int32_t __move_angleErrorCalculator(void);
 int32_t __move_pathErrorCalculator_stay(void);
 int32_t __move_pathErrorCalculator_wall(void);
 
-void __move_stopCalculator_basic(int32_t * lPWM, int32_t * rPWM);
+void __move_stopCalculator_active(void);
+void __move_stopCalculator_lock(void);
 
 // Corrector function
 void __move_correct(void);
